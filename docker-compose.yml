@@ -1,0 +1,25 @@
+version: "3.9"
+
+services:
+
+  mongodb:
+    image: mongo
+
+    container_name: orbithq-mongo
+
+    ports:
+      - "27017:27017"
+
+    volumes:
+      - mongo-data:/data/db
+
+  redis:
+    image: redis
+
+    container_name: orbithq-redis
+
+    ports:
+      - "6379:6379"
+
+volumes:
+  mongo-data:
