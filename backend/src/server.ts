@@ -7,6 +7,7 @@ import app from "./app";
 import { connectDB } from "./config/db";
 import { connectRedis } from "./config/redis";
 import { logger } from "./utils/logger";
+import { env } from "./config/env.js";
 
 const PORT = process.env.PORT || 5000;
 
