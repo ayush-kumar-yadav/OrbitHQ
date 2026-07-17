@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-
+import { verifyRefreshToken } from "../utils/jwt";
 import {
   registerSchema,
   RegisterInput,
@@ -97,6 +97,84 @@ class AuthService {
       },
     };
   }
+  async refresh(refreshToken: string) {
+  if (!refreshToken) {
+    throw new ApiError(
+      HTTPSTATUS.UNAUTHORIZED,
+      "Refresh token is required"
+    );
+  }
+
+  const payload = verifyRefreshToken(refreshToken) as {
+    id: string;
+    email: string;
+    role: string;
+  };
+
+  const user = await userRepository.findById(payload.id);
+
+  if (!user) {
+    throw new ApiError(
+      HTTPSTATUS.UNAUTHORIZED,
+      "User not found"
+    );
+  }
+
+  if (user.refreshToken !== refreshToken) {
+    throw new ApiError(
+      HTTPSTATUS.UNAUTHORIZED,
+      "Invalid refresh token"
+    );
+  }
+
+  const newAccessToken = generateAccessToken(user);
+  const newRefreshToken = generateRefreshToken(user);
+
+  await userRepository.updateRefreshToken(
+    user.id,
+    newRefreshToken
+  );
+
+  return {
+    accessToken: newAccessToken,
+    refreshToken: newRefreshToken,
+  };
+}
+  async getCurrentUser(userId: string) {
+  const user = await userRepository.findById(userId);
+
+  if (!user) {
+    throw new ApiError(
+      HTTPSTATUS.NOT_FOUND,
+      "User not found"
+    );
+  }
+
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    isEmailVerified: user.isEmailVerified,
+    createdAt: user.createdAt,
+  };
+}
+async logout(userId: string) {
+  const user = await userRepository.findById(userId);
+
+  if (!user) {
+    throw new ApiError(
+      HTTPSTATUS.NOT_FOUND,
+      "User not found"
+    );
+  }
+
+  await userRepository.updateRefreshToken(userId, null);
+
+  return {
+    message: "Logged out successfully",
+  };
+}
 }
 
 export const authService = new AuthService();
