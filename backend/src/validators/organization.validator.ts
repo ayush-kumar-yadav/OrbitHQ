@@ -10,3 +10,19 @@ export const createOrganizationSchema = z.object({
 
 export type CreateOrganizationInput =
   z.infer<typeof createOrganizationSchema>;
+  import { UserRole } from "../constants/roles";
+
+export const inviteMemberSchema = z.object({
+  email: z.email("Invalid email address"),
+
+  role: z.enum([
+    UserRole.ADMIN,
+    UserRole.MANAGER,
+    UserRole.DEVELOPER,
+    UserRole.VIEWER,
+  ]),
+});
+
+export type InviteMemberInput = z.infer<
+  typeof inviteMemberSchema
+>;

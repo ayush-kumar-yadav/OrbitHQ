@@ -1,6 +1,5 @@
 import { Schema, model, Types, Document } from "mongoose";
-import { UserRole } from "./user.model";
-
+import { UserRole } from "../constants/roles";
 export interface IOrganizationMember {
   user: Types.ObjectId;
   role: UserRole;

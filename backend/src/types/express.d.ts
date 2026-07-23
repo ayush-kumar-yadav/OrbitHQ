@@ -1,5 +1,4 @@
-import { UserRole } from "../models/user.model";
-
+import { UserRole } from "../constants/roles";
 declare global {
   namespace Express {
     interface Request {
