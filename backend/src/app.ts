@@ -6,6 +6,7 @@ import morgan from "morgan";
 
 import healthRouter from "./routes/health.routes";
 import authRoutes from "./routes/auth.routes";
+import organizationRoutes from "./routes/organization.routes";
 
 import { errorHandler } from "./middleware/errorHandler";
 import { requestId } from "./middleware/requestId";
@@ -30,5 +31,7 @@ app.use("/api/v1/auth", authRoutes);
 
 // Always keep this LAST
 app.use(errorHandler);
+app.use("/api/v1/organizations", organizationRoutes);
+
 
 export default app;

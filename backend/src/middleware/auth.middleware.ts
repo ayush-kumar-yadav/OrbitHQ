@@ -38,10 +38,14 @@ export const authenticate = async (
     }
 
     req.user = {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-    };
+  id: user._id.toString(),
+  email: user.email,
+  role: user.role,
+  organizationId: user.organizationId
+    ? user.organizationId.toString()
+    : null,
+  isEmailVerified: user.isEmailVerified,
+};
 
     next();
   } catch (error) {

@@ -12,6 +12,18 @@ class UserRepository {
   async createUser(userData: Partial<IUser>): Promise<IUser> {
     return User.create(userData);
   }
+  async updateUser(
+  id: string,
+  data: Partial<IUser>
+) {
+  return User.findByIdAndUpdate(
+    id,
+    data,
+    {
+      new: true,
+    }
+  );
+}
 
   async updateRefreshToken(
     userId: string,
