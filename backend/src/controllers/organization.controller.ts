@@ -22,6 +22,22 @@ class OrganizationController {
       );
     }
   );
+  inviteMember = asyncHandler(
+  async (req: Request, res: Response) => {
+    const result =
+      await organizationService.inviteMember(
+        req.user.organizationId!,
+        req.body
+      );
+
+    return res.status(200).json(
+      successResponse(
+        result,
+        "Member invited successfully"
+      )
+    );
+  }
+);
 }
 
 export const organizationController =

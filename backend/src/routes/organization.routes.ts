@@ -13,5 +13,10 @@ router.post(
   authorize(UserRole.OWNER),
   organizationController.createOrganization
 );
-
+router.post(
+  "/invite",
+  authenticate,
+  authorize(UserRole.OWNER, UserRole.ADMIN),
+  organizationController.inviteMember
+);
 export default router;

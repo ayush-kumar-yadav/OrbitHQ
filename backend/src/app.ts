@@ -7,7 +7,7 @@ import morgan from "morgan";
 import healthRouter from "./routes/health.routes";
 import authRoutes from "./routes/auth.routes";
 import organizationRoutes from "./routes/organization.routes";
-
+import projectRoutes from "./routes/project.routes";
 import { errorHandler } from "./middleware/errorHandler";
 import { requestId } from "./middleware/requestId";
 
@@ -28,10 +28,9 @@ app.use(cookieParser());
 app.use("/api/v1/health", healthRouter);
 
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/organizations", organizationRoutes);
+app.use("/api/v1/projects", projectRoutes);
 
 // Always keep this LAST
 app.use(errorHandler);
-app.use("/api/v1/organizations", organizationRoutes);
-
-
 export default app;
