@@ -48,29 +48,33 @@ class ProjectRepository {
     );
   }
 
-  async archiveProject(id: string) {
-    return Project.findByIdAndUpdate(
-      id,
-      {
-        status: ProjectStatus.ARCHIVED,
-      },
-      {
-        new: true,
-      }
-    );
-  }
+  async archiveProject(
+  id: string,
+  data: Partial<IProject>
+) {
+  return Project.findByIdAndUpdate(
+    id,
+    data,
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
+}
 
-  async softDeleteProject(id: string) {
-    return Project.findByIdAndUpdate(
-      id,
-      {
-        deletedAt: new Date(),
-      },
-      {
-        new: true,
-      }
-    );
-  }
+async softDeleteProject(
+  id: string,
+  data: Partial<IProject>
+) {
+  return Project.findByIdAndUpdate(
+    id,
+    data,
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
+}
 }
 
 export const projectRepository = new ProjectRepository();

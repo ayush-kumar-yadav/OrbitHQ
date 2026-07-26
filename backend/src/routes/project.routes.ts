@@ -28,4 +28,24 @@ router.get(
   authenticate,
   projectController.getProjectById
 );
+router.put(
+  "/:id",
+  authenticate,
+  authorize(
+    UserRole.OWNER,
+    UserRole.ADMIN,
+    UserRole.MANAGER
+  ),
+  projectController.updateProject
+);
+router.put(
+  "/:id/archive",
+  authenticate,
+  authorize(
+    UserRole.OWNER,
+    UserRole.ADMIN,
+    UserRole.MANAGER
+  ),
+  projectController.archiveProject
+);
 export default router;

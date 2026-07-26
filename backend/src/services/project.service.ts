@@ -2,10 +2,11 @@ import { FilterQuery, Types } from "mongoose";
 
 import { HTTPSTATUS } from "../config/http.config";
 import { ApiError } from "../errors/ApiError";
-
 import {
   createProjectSchema,
+  updateProjectSchema,
   CreateProjectInput,
+  UpdateProjectInput,
 } from "../validators/project.validator";
 
 import { projectRepository } from "../repositories/project.repository";
@@ -103,8 +104,86 @@ class ProjectService {
       },
     };
   }
+
   async getProjectById(
+    user: {
+      organizationId: string | null;
+    },
+    projectId: string
+  ) {
+    if (!user.organizationId) {
+      throw new ApiError(
+        HTTPSTATUS.BAD_REQUEST,
+        "User does not belong to an organization"
+      );
+    }
+
+    const project = await projectRepository.findById(projectId);
+
+    if (!project) {
+      throw new ApiError(
+        HTTPSTATUS.NOT_FOUND,
+        "Project not found"
+      );
+    }
+
+    if (
+      project.organizationId.toString() !==
+      user.organizationId
+    ) {
+      throw new ApiError(
+        HTTPSTATUS.FORBIDDEN,
+        "You do not have access to this project"
+      );
+    }
+
+    return project;
+  }
+
+  async updateProject(
+    user: {
+      id: string;
+      organizationId: string | null;
+    },
+    projectId: string,
+    body: UpdateProjectInput
+  ) {
+    if (!user.organizationId) {
+      throw new ApiError(
+        HTTPSTATUS.BAD_REQUEST,
+        "User does not belong to an organization"
+      );
+    }
+
+    const data = updateProjectSchema.parse(body);
+
+    const project = await projectRepository.findById(projectId);
+
+    if (!project) {
+      throw new ApiError(
+        HTTPSTATUS.NOT_FOUND,
+        "Project not found"
+      );
+    }
+
+    if (
+      project.organizationId.toString() !==
+      user.organizationId
+    ) {
+      throw new ApiError(
+        HTTPSTATUS.FORBIDDEN,
+        "You do not have access to this project"
+      );
+    }
+
+    return projectRepository.updateProject(projectId, {
+      ...data,
+      updatedBy: new Types.ObjectId(user.id),
+    });
+  }
+  async archiveProject(
   user: {
+    id: string;
     organizationId: string | null;
   },
   projectId: string
@@ -135,7 +214,55 @@ class ProjectService {
     );
   }
 
-  return project;
+  if (project.status === ProjectStatus.ARCHIVED) {
+    throw new ApiError(
+      HTTPSTATUS.BAD_REQUEST,
+      "Project is already archived"
+    );
+  }
+
+  return projectRepository.archiveProject(projectId, {
+    status: ProjectStatus.ARCHIVED,
+    updatedBy: new Types.ObjectId(user.id),
+  });
+}
+async deleteProject(
+  user: {
+    id: string;
+    organizationId: string | null;
+  },
+  projectId: string
+) {
+  if (!user.organizationId) {
+    throw new ApiError(
+      HTTPSTATUS.BAD_REQUEST,
+      "User does not belong to an organization"
+    );
+  }
+
+  const project = await projectRepository.findById(projectId);
+
+  if (!project) {
+    throw new ApiError(
+      HTTPSTATUS.NOT_FOUND,
+      "Project not found"
+    );
+  }
+
+  if (
+    project.organizationId.toString() !==
+    user.organizationId
+  ) {
+    throw new ApiError(
+      HTTPSTATUS.FORBIDDEN,
+      "You do not have access to this project"
+    );
+  }
+
+  return projectRepository.softDeleteProject(projectId, {
+    deletedAt: new Date(),
+    updatedBy: new Types.ObjectId(user.id),
+  });
 }
 }
 

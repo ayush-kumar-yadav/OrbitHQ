@@ -55,7 +55,6 @@ class ProjectController {
       },
       id
     );
-
     return res.status(200).json(
       successResponse(
         project,
@@ -64,6 +63,68 @@ class ProjectController {
     );
   }
 );
+updateProject = asyncHandler(
+  async (req: Request, res: Response) => {
+    const id = req.params.id as string;
+
+    const project = await projectService.updateProject(
+      {
+        id: req.user.id,
+        organizationId: req.user.organizationId,
+      },
+      id,
+      req.body
+    );
+
+    return res.status(200).json(
+      successResponse(
+        project,
+        "Project updated successfully"
+      )
+    );
+  }
+);
+archiveProject = asyncHandler(
+  async (req: Request, res: Response) => {
+    const id = req.params.id as string;
+
+    const project = await projectService.archiveProject(
+      {
+        id: req.user.id,
+        organizationId: req.user.organizationId,
+      },
+      id
+    );
+
+    return res.status(200).json(
+      successResponse(
+        project,
+        "Project archived successfully"
+      )
+    );
+  }
+);
+deleteProject = asyncHandler(
+  async (req: Request, res: Response) => {
+    const id = req.params.id as string;
+
+    await projectService.deleteProject(
+      {
+        id: req.user.id,
+        organizationId: req.user.organizationId,
+      },
+      id
+    );
+
+    return res.status(200).json(
+      successResponse(
+        null,
+        "Project deleted successfully"
+      )
+    );
+  }
+);
+
 }
 
 export const projectController = new ProjectController();

@@ -20,7 +20,8 @@ app.use(cors());
 app.use(helmet());
 
 app.use(morgan("dev"));
-
+import taskRoutes from "./routes/task.routes";
+app.use("/api/v1/tasks", taskRoutes);
 app.use(express.json());
 
 app.use(cookieParser());
