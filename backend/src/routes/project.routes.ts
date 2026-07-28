@@ -48,4 +48,14 @@ router.put(
   ),
   projectController.archiveProject
 );
+router.delete(
+  "/:id",
+  authenticate,
+  authorize(
+    UserRole.OWNER,
+    UserRole.ADMIN,
+    UserRole.MANAGER
+  ),
+  projectController.deleteProject
+);
 export default router;

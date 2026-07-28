@@ -151,13 +151,14 @@ class AuthService {
   }
 
   return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    isEmailVerified: user.isEmailVerified,
-    createdAt: user.createdAt,
-  };
+  id: user.id,
+  name: user.name,
+  email: user.email,
+  role: user.role,
+  organizationId: user.organizationId,
+  isEmailVerified: user.isEmailVerified,
+  createdAt: user.createdAt,
+};
 }
 async logout(userId: string) {
   const user = await userRepository.findById(userId);

@@ -22,6 +22,21 @@ class OrganizationController {
       );
     }
   );
+  getMyOrganization = asyncHandler(
+  async (req: Request, res: Response) => {
+    const organization =
+      await organizationService.getMyOrganization({
+        organizationId: req.user.organizationId,
+      });
+
+    return res.status(200).json(
+      successResponse(
+        organization,
+        "Organization fetched successfully"
+      )
+    );
+  }
+);
   inviteMember = asyncHandler(
   async (req: Request, res: Response) => {
     const result =

@@ -19,4 +19,9 @@ router.post(
   authorize(UserRole.OWNER, UserRole.ADMIN),
   organizationController.inviteMember
 );
+router.get(
+  "/me",
+  authenticate,
+  organizationController.getMyOrganization
+);
 export default router;

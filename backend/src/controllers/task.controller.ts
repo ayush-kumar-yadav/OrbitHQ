@@ -7,20 +7,22 @@ import { taskService } from "../services/task.service";
 
 class TaskController {
   createTask = asyncHandler(
-    async (req: Request, res: Response) => {
-      const task = await taskService.createTask(
-        {
-          id: req.user.id,
-          organizationId: req.user.organizationId,
-        },
-        req.body
-      );
+  async (req: Request, res: Response) => {
+    console.log("REQ BODY:", req.body);
 
-      return res.status(201).json(
-        successResponse(task, "Task created successfully")
-      );
-    }
-  );
+    const task = await taskService.createTask(
+      {
+        id: req.user.id,
+        organizationId: req.user.organizationId,
+      },
+      req.body
+    );
+
+    return res.status(201).json(
+      successResponse(task, "Task created successfully")
+    );
+  }
+);
 
   getAllTasks = asyncHandler(
     async (req: Request, res: Response) => {

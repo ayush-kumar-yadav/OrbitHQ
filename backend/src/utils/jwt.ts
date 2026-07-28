@@ -5,14 +5,18 @@ interface TokenPayload {
   id: string;
   email: string;
   role: string;
+  organizationId: string | null;
 }
 
 export const generateAccessToken = (user: IUser): string => {
   const payload: TokenPayload = {
-    id: user._id.toString(),
-    email: user.email,
-    role: user.role,
-  };
+  id: user._id.toString(),
+  email: user.email,
+  role: user.role,
+  organizationId: user.organizationId
+    ? user.organizationId.toString()
+    : null,
+};
 
   return jwt.sign(
     payload,
@@ -25,10 +29,13 @@ export const generateAccessToken = (user: IUser): string => {
 
 export const generateRefreshToken = (user: IUser): string => {
   const payload: TokenPayload = {
-    id: user._id.toString(),
-    email: user.email,
-    role: user.role,
-  };
+  id: user._id.toString(),
+  email: user.email,
+  role: user.role,
+  organizationId: user.organizationId
+    ? user.organizationId.toString()
+    : null,
+};
 
   return jwt.sign(
     payload,

@@ -17,6 +17,30 @@ import { userRepository } from "../repositories/user.repository";
 import { UserRole } from "../constants/roles";
 
 class OrganizationService {
+  async getMyOrganization(user: {
+  organizationId: string | null;
+}) {
+  if (!user.organizationId) {
+    throw new ApiError(
+      HTTPSTATUS.BAD_REQUEST,
+      "User does not belong to an organization"
+    );
+  }
+
+  const organization =
+    await organizationRepository.findById(
+      user.organizationId
+    );
+
+  if (!organization) {
+    throw new ApiError(
+      HTTPSTATUS.NOT_FOUND,
+      "Organization not found"
+    );
+  }
+
+  return organization;
+}
   async createOrganization(
     userId: string,
     body: CreateOrganizationInput

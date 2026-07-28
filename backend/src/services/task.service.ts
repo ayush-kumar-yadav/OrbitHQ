@@ -2,7 +2,8 @@ import { FilterQuery, Types } from "mongoose";
 
 import { HTTPSTATUS } from "../config/http.config";
 import { ApiError } from "../errors/ApiError";
-
+import { activityService } from "./activity.service";
+import { ActivityAction } from "../constants/activity";
 import {
   createTaskSchema,
   updateTaskSchema,
@@ -127,7 +128,7 @@ class TaskService {
       }
     }
 
-    return taskRepository.createTask({
+    const task = await taskRepository.createTask({
       title: data.title,
       description: data.description,
       projectId: new Types.ObjectId(
@@ -151,6 +152,21 @@ class TaskService {
         : undefined,
       tags: data.tags ?? [],
     });
+
+    await activityService.log({
+      organizationId: user.organizationId!,
+      actor: user.id,
+      taskId: String(task._id),
+      entity: "TASK",
+      action: ActivityAction.TASK_CREATED,
+      newValue: {
+        title: task.title,
+        status: task.status,
+        priority: task.priority,
+      },
+    });
+
+    return task;
   }
 
   async getAllTasks(
@@ -328,7 +344,7 @@ class TaskService {
       }
     }
 
-    return taskRepository.updateTask(taskId, {
+    const updatedTask = await taskRepository.updateTask(taskId, {
       ...data,
       projectId: data.projectId
         ? new Types.ObjectId(data.projectId)
@@ -340,6 +356,17 @@ class TaskService {
         ? new Date(data.dueDate)
         : undefined,
     });
+
+    await activityService.log({
+      organizationId: user.organizationId!,
+      actor: user.id,
+      taskId: taskId,
+      entity: "TASK",
+      action: ActivityAction.TASK_UPDATED,
+      newValue: data,
+    });
+
+    return updatedTask;
   }
 
   async assignTask(
@@ -384,11 +411,24 @@ class TaskService {
       );
     }
 
-    return taskRepository.assignTask(
+    const assignedTask = await taskRepository.assignTask(
       taskId,
       new Types.ObjectId(data.assignee),
       new Types.ObjectId(user.id)
     );
+
+    await activityService.log({
+      organizationId: user.organizationId!,
+      actor: user.id,
+      taskId,
+      entity: "TASK",
+      action: ActivityAction.TASK_ASSIGNED,
+      newValue: {
+        assignee: data.assignee,
+      },
+    });
+
+    return assignedTask;
   }
 
   async updateTaskStatus(
@@ -411,6 +451,8 @@ class TaskService {
       task,
       user.organizationId!
     );
+
+    const previousStatus = task.status;
 
     const allowedTransitions: Record<
       TaskStatus,
@@ -439,11 +481,23 @@ class TaskService {
       );
     }
 
-    return taskRepository.updateTaskStatus(
+    const updatedTask = await taskRepository.updateTaskStatus(
       taskId,
       data.status,
       new Types.ObjectId(user.id)
     );
+
+    await activityService.log({
+      organizationId: user.organizationId!,
+      actor: user.id,
+      taskId,
+      entity: "TASK",
+      action: ActivityAction.TASK_STATUS_CHANGED,
+      oldValue: previousStatus,
+      newValue: data.status,
+    });
+
+    return updatedTask;
   }
 
   async deleteTask(
@@ -474,4 +528,3 @@ class TaskService {
 
 export const taskService =
   new TaskService();
-  
