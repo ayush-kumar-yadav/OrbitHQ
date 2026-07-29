@@ -20,7 +20,11 @@ const app = express();
 
 // Global Middleware
 app.use(requestId);
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+  })
+);
 app.use(helmet());
 app.use(morgan("dev"));
 app.use(express.json());
