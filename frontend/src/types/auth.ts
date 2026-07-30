@@ -1,8 +1,9 @@
 export interface User {
-  id: string;
+  _id: string;
   name: string;
   email: string;
   role: string;
+  organizationId?: string;
 }
 
 export interface LoginRequest {
@@ -16,12 +17,15 @@ export interface RegisterRequest {
   password: string;
 }
 
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+}
+
 export interface LoginResponse {
   success: boolean;
   message: string;
-  data: {
-    accessToken: string;
-    refreshToken: string;
+  data: AuthTokens & {
     user: User;
   };
 }
