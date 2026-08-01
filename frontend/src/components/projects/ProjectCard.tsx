@@ -1,3 +1,6 @@
+import { useNavigate } from "react-router-dom";
+
+
 type ProjectCardProps = {
   project: {
     _id: string;
@@ -10,6 +13,7 @@ type ProjectCardProps = {
 export default function ProjectCard({
   project,
 }: ProjectCardProps) {
+  const navigate = useNavigate();
   return (
     <div className="rounded-xl border bg-white p-5 shadow-sm transition hover:shadow-md">
       <h2 className="text-xl font-semibold">
@@ -25,9 +29,12 @@ export default function ProjectCard({
           {project.status}
         </span>
 
-        <button className="text-blue-600 hover:underline">
-          View →
-        </button>
+        <button
+  onClick={() => navigate(`/projects/${project._id}`)}
+  className="text-blue-600 hover:underline"
+>
+  View →
+</button>
       </div>
     </div>
   );

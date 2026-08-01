@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -12,7 +12,6 @@ export default function LoginPage() {
   const navigate = useNavigate();
 
   const loginMutation = useLogin();
-
   const { login } = useAuth();
 
   const {
@@ -27,29 +26,22 @@ export default function LoginPage() {
     try {
       const response = await loginMutation.mutateAsync(data);
 
-      login(
-        response.data.user,
-        response.data.accessToken
-      );
+      login(response.data.user, response.data.accessToken);
 
       navigate("/");
     } catch (error: any) {
-  console.error(error);
+      console.error(error);
 
-  console.log("Status:", error.response?.status);
-  console.log("Data:", error.response?.data);
+      console.log("Status:", error.response?.status);
+      console.log("Data:", error.response?.data);
 
-  alert(
-    error.response?.data?.message ??
-    "Something went wrong"
-  );
-}
+      alert(error.response?.data?.message ?? "Something went wrong");
+    }
   }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-100">
       <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-lg">
-
         <h1 className="mb-6 text-center text-3xl font-bold">
           Welcome Back
         </h1>
@@ -104,6 +96,16 @@ export default function LoginPage() {
               : "Login"}
           </button>
         </form>
+
+        <p className="mt-6 text-center text-sm">
+          Don't have an account?{" "}
+          <Link
+            to="/register"
+            className="font-semibold text-blue-600 hover:underline"
+          >
+            Register
+          </Link>
+        </p>
       </div>
     </div>
   );
