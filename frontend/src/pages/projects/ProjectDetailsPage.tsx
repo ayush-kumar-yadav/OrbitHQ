@@ -9,6 +9,7 @@ import TaskList from "../../components/tasks/TaskList";
 import { useState } from "react";
 import ProjectTabs from "../../components/projects/ProjectTabs";
 import ProjectBoard from "../../components/projects/ProjectBoard";
+import ProjectSettings from "../../components/projects/ProjectSettings";
 
 export default function ProjectDetailsPage() {
   const { id } = useParams();
@@ -95,8 +96,15 @@ export default function ProjectDetailsPage() {
 )}
 
 {activeTab === "Activity" && (
-  <div className="rounded-xl border bg-white p-8">
-    Activity coming soon...
+  <div className="rounded-xl border bg-white p-8 shadow-sm">
+    <h2 className="text-2xl font-bold">
+      Project Activity
+    </h2>
+
+    <p className="mt-3 text-gray-500">
+      Activity timeline will appear here once project-wide
+      activity aggregation is implemented.
+    </p>
   </div>
 )}
 
@@ -105,9 +113,9 @@ export default function ProjectDetailsPage() {
 )}
 
 {activeTab === "Settings" && (
-  <div className="rounded-xl border bg-white p-8">
-    Project settings coming soon...
-  </div>
+  <ProjectSettings
+    project={project}
+  />
 )}
 
       </div> {/* <-- This was missing */}

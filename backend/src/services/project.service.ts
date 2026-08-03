@@ -40,6 +40,7 @@ class ProjectService {
 
     return project;
   }
+  
 
   async getAllProjects(
     user: {

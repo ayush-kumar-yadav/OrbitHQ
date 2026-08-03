@@ -17,6 +17,24 @@ class TaskRepository {
       .populate("projectId", "name status")
       .lean();
   }
+  async getUpcomingTasks(
+  organizationId: string,
+  limit = 5
+) {
+  return Task.find({
+    organizationId,
+    deletedAt: null,
+    dueDate: {
+      $ne: null,
+    },
+  })
+    .sort({
+      dueDate: 1,
+    })
+    .limit(limit)
+    .populate("projectId", "name")
+    .lean();
+}
 
   async findTasks(
     filter: FilterQuery<ITask>,

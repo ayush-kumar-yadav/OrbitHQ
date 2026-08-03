@@ -17,6 +17,7 @@ class ProjectRepository {
       deletedAt: null,
     });
   }
+  
 
   async findAll(
     filter: FilterQuery<IProject>,
@@ -30,6 +31,22 @@ class ProjectRepository {
       .limit(limit)
       .lean();
   }
+  
+  async getRecentProjects(
+  organizationId: string,
+  limit = 5
+) {
+  return Project.find({
+    organizationId,
+    deletedAt: null,
+  })
+    .sort({
+      createdAt: -1,
+    })
+    .limit(limit)
+    .lean();
+}
+
 
   async count(filter: FilterQuery<IProject>) {
     return Project.countDocuments(filter);

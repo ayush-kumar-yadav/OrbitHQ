@@ -48,6 +48,7 @@ router.put(
   ),
   projectController.archiveProject
 );
+
 router.delete(
   "/:id",
   authenticate,
