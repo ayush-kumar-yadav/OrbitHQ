@@ -17,46 +17,20 @@ import { userRepository } from "../repositories/user.repository";
 import { UserRole } from "../constants/roles";
 
 class OrganizationService {
-  async getMyOrganization(user: {
-  organizationId: string | null;
-}) {
-  if (!user.organizationId) {
-    throw new ApiError(
-      HTTPSTATUS.BAD_REQUEST,
-      "User does not belong to an organization"
-    );
-  }
-
-  const organization =
-    await organizationRepository.findById(
-      user.organizationId
-    );
-
-  if (!organization) {
-    throw new ApiError(
-      HTTPSTATUS.NOT_FOUND,
-      "Organization not found"
-    );
-  }
-
-  return organization;
-}
   async createOrganization(
     userId: string,
     body: CreateOrganizationInput
   ) {
-    // 1. Validate request
     const data = createOrganizationSchema.parse(body);
 
-    // 2. Generate slug
     const slug = slugify(data.name, {
       lower: true,
       strict: true,
       trim: true,
     });
 
-    // 3. Check if organization already exists
-    const existing = await organizationRepository.findBySlug(slug);
+    const existing =
+      await organizationRepository.findBySlug(slug);
 
     if (existing) {
       throw new ApiError(
@@ -65,34 +39,56 @@ class OrganizationService {
       );
     }
 
-    // 4. Convert userId -> ObjectId
     const ownerId = new Types.ObjectId(userId);
 
-    // 5. Create organization
-    const organization = await organizationRepository.createOrganization({
-      name: data.name,
-      slug,
-      owner: ownerId,
-      members: [
-        {
-          user: ownerId,
-          role: UserRole.OWNER,
-        },
-      ],
-    });
+    const organization =
+      await organizationRepository.createOrganization({
+        name: data.name,
+        slug,
+        owner: ownerId,
+        members: [
+          {
+            user: ownerId,
+            role: UserRole.OWNER,
+          },
+        ],
+      });
 
-    // 6. Update user
     await userRepository.updateUser(userId, {
       organizationId: organization._id,
       role: UserRole.OWNER,
     });
 
-    // 7. Return response
     return {
       id: organization._id.toString(),
       name: organization.name,
       slug: organization.slug,
     };
+  }
+
+  async getMyOrganization(user: {
+    organizationId: string | null;
+  }) {
+    if (!user.organizationId) {
+      throw new ApiError(
+        HTTPSTATUS.BAD_REQUEST,
+        "User does not belong to an organization"
+      );
+    }
+
+    const organization =
+      await organizationRepository.findById(
+        user.organizationId
+      );
+
+    if (!organization) {
+      throw new ApiError(
+        HTTPSTATUS.NOT_FOUND,
+        "Organization not found"
+      );
+    }
+
+    return organization;
   }
 
   async inviteMember(
@@ -101,7 +97,8 @@ class OrganizationService {
   ) {
     const data = inviteMemberSchema.parse(body);
 
-    const invitedUser = await userRepository.findByEmail(data.email);
+    const invitedUser =
+      await userRepository.findByEmail(data.email);
 
     if (!invitedUser) {
       throw new ApiError(
@@ -117,10 +114,11 @@ class OrganizationService {
       );
     }
 
-    const existingMember = await organizationRepository.findMember(
-      organizationId,
-      invitedUser._id.toString()
-    );
+    const existingMember =
+      await organizationRepository.findMember(
+        organizationId,
+        invitedUser._id.toString()
+      );
 
     if (existingMember) {
       throw new ApiError(
@@ -135,10 +133,13 @@ class OrganizationService {
       data.role
     );
 
-    await userRepository.updateUser(invitedUser._id.toString(), {
-      organizationId: organizationId as any,
-      role: data.role,
-    });
+    await userRepository.updateUser(
+      invitedUser._id.toString(),
+      {
+        organizationId: organizationId as any,
+        role: data.role,
+      }
+    );
 
     return {
       email: invitedUser.email,
@@ -146,6 +147,73 @@ class OrganizationService {
       message: "Member invited successfully",
     };
   }
+
+  async getMembers(organizationId: string) {
+    const organization =
+      await organizationRepository.findById(
+        organizationId
+      );
+
+    if (!organization) {
+      throw new ApiError(
+        HTTPSTATUS.NOT_FOUND,
+        "Organization not found"
+      );
+    }
+
+    return organization.members;
+  }
+
+  async updateMemberRole(
+    organizationId: string,
+    userId: string,
+    role: UserRole
+  ) {
+    const organization =
+      await organizationRepository.updateMemberRole(
+        organizationId,
+        userId,
+        role
+      );
+
+    if (!organization) {
+      throw new ApiError(
+        HTTPSTATUS.NOT_FOUND,
+        "Member not found"
+      );
+    }
+
+    await userRepository.updateUser(userId, {
+      role,
+    });
+
+    return organization;
+  }
+
+  async removeMember(
+    organizationId: string,
+    userId: string
+  ) {
+    const organization =
+      await organizationRepository.removeMember(
+        organizationId,
+        userId
+      );
+
+    if (!organization) {
+      throw new ApiError(
+        HTTPSTATUS.NOT_FOUND,
+        "Member not found"
+      );
+    }
+
+    await userRepository.updateUser(userId, {
+  organizationId: null,
+});
+
+    return organization;
+  }
 }
 
-export const organizationService = new OrganizationService();
+export const organizationService =
+  new OrganizationService();

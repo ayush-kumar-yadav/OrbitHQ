@@ -13,7 +13,7 @@ import taskRoutes from "./routes/task.routes";
 
 import { errorHandler } from "./middleware/errorHandler";
 import { requestId } from "./middleware/requestId";
-
+import dashboardRoutes from "./routes/dashboard.routes";
 
 
 const app = express();
@@ -31,6 +31,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Routes
+app.use("/api/v1/dashboard", dashboardRoutes);
 app.use("/api/v1/health", healthRouter);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/organizations", organizationRoutes);

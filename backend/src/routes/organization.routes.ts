@@ -24,4 +24,23 @@ router.get(
   authenticate,
   organizationController.getMyOrganization
 );
+router.get(
+  "/members",
+  authenticate,
+  organizationController.getMembers
+);
+
+router.patch(
+  "/members/:userId/role",
+  authenticate,
+  authorize(UserRole.OWNER),
+  organizationController.updateMemberRole
+);
+
+router.delete(
+  "/members/:userId",
+  authenticate,
+  authorize(UserRole.OWNER),
+  organizationController.removeMember
+);
 export default router;

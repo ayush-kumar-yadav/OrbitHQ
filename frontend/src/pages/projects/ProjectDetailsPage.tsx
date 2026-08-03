@@ -1,7 +1,7 @@
 import { useParams } from "react-router-dom";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import { useProject } from "../../hooks/projects/useProject";
-
+import MembersTab from "../../components/organization/MembersTab";
 import ProjectStats from "../../components/projects/ProjectStats";
 import ProjectActions from "../../components/projects/ProjectActions";
 import CreateTaskForm from "../../components/tasks/CreateTaskForm";
@@ -84,20 +84,14 @@ export default function ProjectDetailsPage() {
     />
 
     <div className="mt-8 grid gap-6 lg:grid-cols-2">
-      <CreateTaskForm
-        projectId={project._id}
-      />
-
-      <TaskList
-        projectId={project._id}
-      />
+      <CreateTaskForm projectId={project._id} />
+      <TaskList projectId={project._id} />
     </div>
   </>
-)} 
+)}
+
 {activeTab === "Board" && (
-  <ProjectBoard
-    projectId={project._id}
-  />
+  <ProjectBoard projectId={project._id} />
 )}
 
 {activeTab === "Activity" && (
@@ -107,9 +101,7 @@ export default function ProjectDetailsPage() {
 )}
 
 {activeTab === "Members" && (
-  <div className="rounded-xl border bg-white p-8">
-    Members coming soon...
-  </div>
+  <MembersTab />
 )}
 
 {activeTab === "Settings" && (
