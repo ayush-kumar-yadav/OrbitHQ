@@ -18,6 +18,7 @@ import { queueService } from "./queue.service";
 
 import { ActivityAction } from "../constants/activity";
 
+
 class CommentService {
   private extractMentions(content: string): string[] {
     const regex = /@(\w+)/g;
