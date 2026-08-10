@@ -14,6 +14,7 @@ import { commentRepository } from "../repositories/comment.repository";
 import { taskRepository } from "../repositories/task.repository";
 
 import { activityService } from "./activity.service";
+import { queueService } from "./queue.service";
 
 import { ActivityAction } from "../constants/activity";
 
@@ -38,9 +39,13 @@ class CommentService {
     authorId: string,
     body: CreateCommentInput
   ) {
+    // 1. Validate request
     const data = createCommentSchema.parse(body);
 
-const task = await taskRepository.findTaskById(taskId);
+    // 2. Verify task exists
+    const task =
+      await taskRepository.findTaskById(taskId);
+
     if (!task) {
       throw new ApiError(
         HTTPSTATUS.NOT_FOUND,
@@ -48,21 +53,28 @@ const task = await taskRepository.findTaskById(taskId);
       );
     }
 
-    const mentions = this.extractMentions(data.content);
+    // 3. Extract @mentions
+    const mentions =
+      this.extractMentions(data.content);
 
+    // 4. Create comment
     const comment =
       await commentRepository.createComment({
-        organizationId: new Types.ObjectId(organizationId),
+        organizationId:
+          new Types.ObjectId(organizationId),
 
-        taskId: new Types.ObjectId(taskId),
+        taskId:
+          new Types.ObjectId(taskId),
 
-        author: new Types.ObjectId(authorId),
+        author:
+          new Types.ObjectId(authorId),
 
         content: data.content,
 
         mentions,
       });
 
+    // 5. Create activity log
     await activityService.log({
       organizationId,
       actor: authorId,
@@ -70,8 +82,24 @@ const task = await taskRepository.findTaskById(taskId);
       entity: "COMMENT",
       action: ActivityAction.COMMENT_ADDED,
       newValue: data.content,
+      metadata: {
+        commentId: comment._id.toString(),
+        mentions,
+      },
     });
 
+    // 6. Queue notification for task assignee
+    if (task.assignee) {
+      await queueService.addNotificationJob({
+        userId: task.assignee.toString(),
+        type: "COMMENT_ADDED",
+        message: `A new comment was added to task ${taskId}`,
+        taskId,
+        actorId: authorId,
+      });
+    }
+
+    // 7. Return created comment
     return comment;
   }
 
@@ -80,9 +108,11 @@ const task = await taskRepository.findTaskById(taskId);
     taskId: string
   ) {
     return commentRepository.findComments({
-      organizationId: new Types.ObjectId(organizationId),
+      organizationId:
+        new Types.ObjectId(organizationId),
 
-      taskId: new Types.ObjectId(taskId),
+      taskId:
+        new Types.ObjectId(taskId),
 
       deletedAt: null,
     });
@@ -93,8 +123,11 @@ const task = await taskRepository.findTaskById(taskId);
     authorId: string,
     body: UpdateCommentInput
   ) {
-    const data = updateCommentSchema.parse(body);
+    // 1. Validate
+    const data =
+      updateCommentSchema.parse(body);
 
+    // 2. Find comment
     const comment =
       await commentRepository.findById(commentId);
 
@@ -105,6 +138,7 @@ const task = await taskRepository.findTaskById(taskId);
       );
     }
 
+    // 3. Only author can edit
     if (
       String(comment.author._id) !== authorId
     ) {
@@ -114,8 +148,11 @@ const task = await taskRepository.findTaskById(taskId);
       );
     }
 
-    const mentions = this.extractMentions(data.content);
+    // 4. Extract updated mentions
+    const mentions =
+      this.extractMentions(data.content);
 
+    // 5. Update comment
     const updated =
       await commentRepository.updateComment(
         commentId,
@@ -125,14 +162,29 @@ const task = await taskRepository.findTaskById(taskId);
         }
       );
 
+    // 6. Activity log
     await activityService.log({
-      organizationId: String(comment.organizationId),
+      organizationId:
+        String(comment.organizationId),
+
       actor: authorId,
-      taskId: String(comment.taskId),
+
+      taskId:
+        String(comment.taskId),
+
       entity: "COMMENT",
-      action: ActivityAction.COMMENT_UPDATED,
+
+      action:
+        ActivityAction.COMMENT_UPDATED,
+
       oldValue: comment.content,
+
       newValue: data.content,
+
+      metadata: {
+        commentId,
+        mentions,
+      },
     });
 
     return updated;
@@ -142,8 +194,11 @@ const task = await taskRepository.findTaskById(taskId);
     commentId: string,
     authorId: string
   ) {
+    // 1. Find comment
     const comment =
-      await commentRepository.findById(commentId);
+      await commentRepository.findById(
+        commentId
+      );
 
     if (!comment) {
       throw new ApiError(
@@ -152,6 +207,7 @@ const task = await taskRepository.findTaskById(taskId);
       );
     }
 
+    // 2. Only author can delete
     if (
       String(comment.author._id) !== authorId
     ) {
@@ -161,18 +217,32 @@ const task = await taskRepository.findTaskById(taskId);
       );
     }
 
+    // 3. Soft delete
     const deleted =
       await commentRepository.softDeleteComment(
         commentId
       );
 
+    // 4. Activity log
     await activityService.log({
-      organizationId: String(comment.organizationId),
+      organizationId:
+        String(comment.organizationId),
+
       actor: authorId,
-      taskId: String(comment.taskId),
+
+      taskId:
+        String(comment.taskId),
+
       entity: "COMMENT",
-      action: ActivityAction.COMMENT_DELETED,
+
+      action:
+        ActivityAction.COMMENT_DELETED,
+
       oldValue: comment.content,
+
+      metadata: {
+        commentId,
+      },
     });
 
     return deleted;

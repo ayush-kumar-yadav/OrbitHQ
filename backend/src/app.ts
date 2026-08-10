@@ -10,6 +10,7 @@ import authRoutes from "./routes/auth.routes";
 import organizationRoutes from "./routes/organization.routes";
 import projectRoutes from "./routes/project.routes";
 import taskRoutes from "./routes/task.routes";
+import testQueueRoutes from "./routes/test.queue.routes";
 
 import { errorHandler } from "./middleware/errorHandler";
 import { requestId } from "./middleware/requestId";
@@ -42,6 +43,10 @@ app.use("/api/v1/projects", projectRoutes);
 app.use("/api/v1/tasks", taskRoutes);
 app.use("/api/v1", commentRoutes);
 app.use("/api/v1", activityRoutes);
+app.use(
+  "/api/v1",
+  testQueueRoutes
+);
 // Error Handler (Always Last)
 app.use(errorHandler);
 
