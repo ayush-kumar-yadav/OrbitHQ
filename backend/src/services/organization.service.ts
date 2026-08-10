@@ -16,12 +16,16 @@ import { userRepository } from "../repositories/user.repository";
 
 import { UserRole } from "../constants/roles";
 
+import { cacheService } from "../cache/cache.service";
+import { cacheKeys } from "../cache/cache.keys";
+
 class OrganizationService {
   async createOrganization(
     userId: string,
     body: CreateOrganizationInput
   ) {
-    const data = createOrganizationSchema.parse(body);
+    const data =
+      createOrganizationSchema.parse(body);
 
     const slug = slugify(data.name, {
       lower: true,
@@ -30,7 +34,9 @@ class OrganizationService {
     });
 
     const existing =
-      await organizationRepository.findBySlug(slug);
+      await organizationRepository.findBySlug(
+        slug
+      );
 
     if (existing) {
       throw new ApiError(
@@ -39,7 +45,8 @@ class OrganizationService {
       );
     }
 
-    const ownerId = new Types.ObjectId(userId);
+    const ownerId =
+      new Types.ObjectId(userId);
 
     const organization =
       await organizationRepository.createOrganization({
@@ -54,10 +61,14 @@ class OrganizationService {
         ],
       });
 
-    await userRepository.updateUser(userId, {
-      organizationId: organization._id,
-      role: UserRole.OWNER,
-    });
+    await userRepository.updateUser(
+      userId,
+      {
+        organizationId:
+          organization._id,
+        role: UserRole.OWNER,
+      }
+    );
 
     return {
       id: organization._id.toString(),
@@ -65,6 +76,10 @@ class OrganizationService {
       slug: organization.slug,
     };
   }
+
+  // =========================================================
+  // GET MY ORGANIZATION
+  // =========================================================
 
   async getMyOrganization(user: {
     organizationId: string | null;
@@ -76,9 +91,34 @@ class OrganizationService {
       );
     }
 
+    const organizationId =
+      user.organizationId;
+
+    const cacheKey =
+      cacheKeys.organization(
+        organizationId
+      );
+
+    // -------------------------------------------------------
+    // Redis
+    // -------------------------------------------------------
+
+    const cachedOrganization =
+      await cacheService.get(
+        cacheKey
+      );
+
+    if (cachedOrganization) {
+      return cachedOrganization;
+    }
+
+    // -------------------------------------------------------
+    // MongoDB
+    // -------------------------------------------------------
+
     const organization =
       await organizationRepository.findById(
-        user.organizationId
+        organizationId
       );
 
     if (!organization) {
@@ -88,17 +128,35 @@ class OrganizationService {
       );
     }
 
+    // -------------------------------------------------------
+    // Redis
+    // Organization TTL = 10 minutes
+    // -------------------------------------------------------
+
+    await cacheService.set(
+      cacheKey,
+      organization,
+      600
+    );
+
     return organization;
   }
+
+  // =========================================================
+  // INVITE MEMBER
+  // =========================================================
 
   async inviteMember(
     organizationId: string,
     body: InviteMemberInput
   ) {
-    const data = inviteMemberSchema.parse(body);
+    const data =
+      inviteMemberSchema.parse(body);
 
     const invitedUser =
-      await userRepository.findByEmail(data.email);
+      await userRepository.findByEmail(
+        data.email
+      );
 
     if (!invitedUser) {
       throw new ApiError(
@@ -136,19 +194,41 @@ class OrganizationService {
     await userRepository.updateUser(
       invitedUser._id.toString(),
       {
-        organizationId: organizationId as any,
+        organizationId:
+          organizationId as any,
         role: data.role,
       }
+    );
+
+    // Organization changed → invalidate cache
+    await cacheService.del(
+      cacheKeys.organization(
+        organizationId
+      )
+    );
+
+    // User changed → invalidate user cache
+    await cacheService.del(
+      cacheKeys.user(
+        invitedUser._id.toString()
+      )
     );
 
     return {
       email: invitedUser.email,
       role: data.role,
-      message: "Member invited successfully",
+      message:
+        "Member invited successfully",
     };
   }
 
-  async getMembers(organizationId: string) {
+  // =========================================================
+  // GET MEMBERS
+  // =========================================================
+
+  async getMembers(
+    organizationId: string
+  ) {
     const organization =
       await organizationRepository.findById(
         organizationId
@@ -163,6 +243,10 @@ class OrganizationService {
 
     return organization.members;
   }
+
+  // =========================================================
+  // UPDATE MEMBER ROLE
+  // =========================================================
 
   async updateMemberRole(
     organizationId: string,
@@ -183,12 +267,31 @@ class OrganizationService {
       );
     }
 
-    await userRepository.updateUser(userId, {
-      role,
-    });
+    await userRepository.updateUser(
+      userId,
+      {
+        role,
+      }
+    );
+
+    // Organization cache
+    await cacheService.del(
+      cacheKeys.organization(
+        organizationId
+      )
+    );
+
+    // User cache
+    await cacheService.del(
+      cacheKeys.user(userId)
+    );
 
     return organization;
   }
+
+  // =========================================================
+  // REMOVE MEMBER
+  // =========================================================
 
   async removeMember(
     organizationId: string,
@@ -207,9 +310,31 @@ class OrganizationService {
       );
     }
 
-    await userRepository.updateUser(userId, {
-  organizationId: null,
-});
+    await userRepository.updateUser(
+      userId,
+      {
+        organizationId: null,
+      }
+    );
+
+    // Organization cache
+    await cacheService.del(
+      cacheKeys.organization(
+        organizationId
+      )
+    );
+
+    // User cache
+    await cacheService.del(
+      cacheKeys.user(userId)
+    );
+
+    // Dashboard is affected by membership
+    await cacheService.del(
+      cacheKeys.dashboard(
+        organizationId
+      )
+    );
 
     return organization;
   }

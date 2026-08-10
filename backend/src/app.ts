@@ -13,6 +13,7 @@ import taskRoutes from "./routes/task.routes";
 
 import { errorHandler } from "./middleware/errorHandler";
 import { requestId } from "./middleware/requestId";
+import { performanceMiddleware } from "./middleware/performance.middleware";
 import dashboardRoutes from "./routes/dashboard.routes";
 
 
@@ -20,6 +21,8 @@ const app = express();
 
 // Global Middleware
 app.use(requestId);
+app.use(performanceMiddleware);
+
 app.use(
   cors({
     origin: "http://localhost:5173",

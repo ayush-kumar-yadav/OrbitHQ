@@ -2,8 +2,13 @@ import { FilterQuery, Types } from "mongoose";
 
 import { HTTPSTATUS } from "../config/http.config";
 import { ApiError } from "../errors/ApiError";
+
 import { activityService } from "./activity.service";
 import { ActivityAction } from "../constants/activity";
+
+import { cacheService } from "../cache/cache.service";
+import { cacheKeys } from "../cache/cache.keys";
+
 import {
   createTaskSchema,
   updateTaskSchema,
@@ -71,6 +76,9 @@ class TaskService {
     }
   }
 
+  /**
+   * Create Task
+   */
   async createTask(
     user: {
       id: string;
@@ -153,6 +161,18 @@ class TaskService {
       tags: data.tags ?? [],
     });
 
+    // Invalidate task list caches
+    await cacheService.delPattern(
+      `tasks:${user.organizationId}:*`
+    );
+
+    // Invalidate dashboard cache
+    await cacheService.del(
+      cacheKeys.dashboard(
+        user.organizationId!
+      )
+    );
+
     await activityService.log({
       organizationId: user.organizationId!,
       actor: user.id,
@@ -169,95 +189,148 @@ class TaskService {
     return task;
   }
 
+  /**
+   * Get all tasks
+   */
   async getAllTasks(
-  user: {
-    organizationId: string | null;
-  },
-  query: {
-    page?: string;
-    limit?: string;
-    search?: string;
-    status?: string;
-    priority?: string;
-    assignee?: string;
-    projectId?: string;
-    sort?: string;
-  }
-) {
-  this.ensureOrganization(user);
+    user: {
+      organizationId: string | null;
+    },
+    query: {
+      page?: string;
+      limit?: string;
+      search?: string;
+      status?: string;
+      priority?: string;
+      assignee?: string;
+      projectId?: string;
+      sort?: string;
+    }
+  ) {
+    this.ensureOrganization(user);
 
-  const organizationId = user.organizationId!;
+    const organizationId = user.organizationId!;
 
-  const page = Number(query.page) || 1;
-  const limit = Number(query.limit) || 10;
-  const skip = (page - 1) * limit;
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 10;
 
-  const filter: FilterQuery<ITask> = {
-    organizationId: new Types.ObjectId(organizationId),
-    deletedAt: null,
-  };
-
-  if (query.search) {
-    filter.title = {
-      $regex: query.search,
-      $options: "i",
-    };
-  }
-
-  if (query.status) {
-    filter.status = query.status as TaskStatus;
-  }
-
-  if (query.priority) {
-    filter.priority = query.priority as TaskPriority;
-  }
-
-  if (query.assignee) {
-    filter.assignee = new Types.ObjectId(query.assignee);
-  }
-
-  if (query.projectId) {
-    filter.projectId = new Types.ObjectId(query.projectId);
-  }
-
-  let sort: Record<string, 1 | -1> = {
-    createdAt: -1,
-  };
-
-  if (query.sort) {
-    const field = query.sort.startsWith("-")
-      ? query.sort.substring(1)
-      : query.sort;
-
-    const order: 1 | -1 = query.sort.startsWith("-")
-      ? -1
-      : 1;
-
-    sort = {
-      [field]: order,
-    };
-  }
-
-  const [tasks, total] = await Promise.all([
-    taskRepository.findTasks(filter, {
-      skip,
-      limit,
-      sort,
-    }),
-    taskRepository.count(filter),
-  ]);
-
-  return {
-    tasks,
-    pagination: {
+    /**
+     * Generate cache key based on:
+     * organization + pagination + filters + sorting
+     */
+    const cacheKey = cacheKeys.tasks(
+      organizationId,
       page,
       limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    },
-  };
-}
+      query.status,
+      query.priority,
+      query.assignee,
+      query.projectId,
+      query.search,
+      query.sort
+    );
 
+    /**
+     * Check Redis first
+     */
+    const cachedResult = await cacheService.get(cacheKey);
+
+    if (cachedResult) {
+      return cachedResult;
+    }
+
+    const skip = (page - 1) * limit;
+
+    const filter: FilterQuery<ITask> = {
+      organizationId: new Types.ObjectId(
+        organizationId
+      ),
+      deletedAt: null,
+    };
+
+    if (query.search) {
+      filter.title = {
+        $regex: query.search,
+        $options: "i",
+      };
+    }
+
+    if (query.status) {
+      filter.status =
+        query.status as TaskStatus;
+    }
+
+    if (query.priority) {
+      filter.priority =
+        query.priority as TaskPriority;
+    }
+
+    if (query.assignee) {
+      filter.assignee =
+        new Types.ObjectId(query.assignee);
+    }
+
+    if (query.projectId) {
+      filter.projectId =
+        new Types.ObjectId(query.projectId);
+    }
+
+    let sort: Record<string, 1 | -1> = {
+      createdAt: -1,
+    };
+
+    if (query.sort) {
+      const field = query.sort.startsWith("-")
+        ? query.sort.substring(1)
+        : query.sort;
+
+      const order: 1 | -1 =
+        query.sort.startsWith("-")
+          ? -1
+          : 1;
+
+      sort = {
+        [field]: order,
+      };
+    }
+
+    const [tasks, total] = await Promise.all([
+      taskRepository.findTasks(filter, {
+        skip,
+        limit,
+        sort,
+      }),
+      taskRepository.count(filter),
+    ]);
+
+    const result = {
+      tasks,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(
+          total / limit
+        ),
+      },
+    };
+
+    /**
+     * Store complete result in Redis
+     * TTL = 120 seconds
+     */
+    await cacheService.set(
+      cacheKey,
+      result,
+      120
+    );
+
+    return result;
+  }
+
+  /**
+   * Get task by ID
+   */
   async getTaskById(
     user: {
       organizationId: string | null;
@@ -266,18 +339,65 @@ class TaskService {
   ) {
     this.ensureOrganization(user);
 
+    const organizationId =
+      user.organizationId!;
+
+    const cacheKey =
+      cacheKeys.task(taskId);
+
+    // ---------------------------------------------------------
+    // Redis
+    // ---------------------------------------------------------
+
+    const cachedTask =
+      await cacheService.get<ITask>(
+        cacheKey
+      );
+
+    if (cachedTask) {
+      // Organization isolation
+      if (
+        cachedTask.organizationId.toString() !==
+        organizationId
+      ) {
+        throw new ApiError(
+          HTTPSTATUS.FORBIDDEN,
+          "You do not have access to this task"
+        );
+      }
+
+      return cachedTask;
+    }
+
+    // ---------------------------------------------------------
+    // MongoDB
+    // ---------------------------------------------------------
+
     const task =
       await this.getTaskOrThrow(taskId);
 
     this.ensureTaskAccess(
       task,
-      user.organizationId!
+      organizationId
+    );
+
+    // ---------------------------------------------------------
+    // Redis
+    // ---------------------------------------------------------
+
+    await cacheService.set(
+      cacheKey,
+      task,
+      120
     );
 
     return task;
   }
 
-    async updateTask(
+  /**
+   * Update Task
+   */
+  async updateTask(
     user: {
       id: string;
       organizationId: string | null;
@@ -287,9 +407,11 @@ class TaskService {
   ) {
     this.ensureOrganization(user);
 
-    const data = updateTaskSchema.parse(body);
+    const data =
+      updateTaskSchema.parse(body);
 
-    const task = await this.getTaskOrThrow(taskId);
+    const task =
+      await this.getTaskOrThrow(taskId);
 
     this.ensureTaskAccess(
       task,
@@ -344,18 +466,48 @@ class TaskService {
       }
     }
 
-    const updatedTask = await taskRepository.updateTask(taskId, {
-      ...data,
-      projectId: data.projectId
-        ? new Types.ObjectId(data.projectId)
-        : undefined,
-      assignee: data.assignee
-        ? new Types.ObjectId(data.assignee)
-        : undefined,
-      dueDate: data.dueDate
-        ? new Date(data.dueDate)
-        : undefined,
-    });
+    const updatedTask =
+      await taskRepository.updateTask(
+        taskId,
+        {
+          ...data,
+          projectId: data.projectId
+            ? new Types.ObjectId(
+                data.projectId
+              )
+            : undefined,
+          assignee: data.assignee
+            ? new Types.ObjectId(
+                data.assignee
+              )
+            : undefined,
+          dueDate: data.dueDate
+            ? new Date(data.dueDate)
+            : undefined,
+        }
+      );
+
+    // Invalidate individual task cache
+    await cacheService.del(
+      cacheKeys.task(taskId)
+    );
+
+    // Invalidate all task-list caches
+    await cacheService.delPattern(
+      `tasks:${user.organizationId}:*`
+    );
+
+    // Invalidate dashboard cache
+    await cacheService.del(
+      cacheKeys.dashboard(
+        user.organizationId!
+      )
+    );
+
+    // Invalidate activity cache
+    await cacheService.del(
+      cacheKeys.activity(taskId)
+    );
 
     await activityService.log({
       organizationId: user.organizationId!,
@@ -369,6 +521,9 @@ class TaskService {
     return updatedTask;
   }
 
+  /**
+   * Assign Task
+   */
   async assignTask(
     user: {
       id: string;
@@ -379,7 +534,8 @@ class TaskService {
   ) {
     this.ensureOrganization(user);
 
-    const data = assignTaskSchema.parse(body);
+    const data =
+      assignTaskSchema.parse(body);
 
     const task =
       await this.getTaskOrThrow(taskId);
@@ -411,10 +567,33 @@ class TaskService {
       );
     }
 
-    const assignedTask = await taskRepository.assignTask(
-      taskId,
-      new Types.ObjectId(data.assignee),
-      new Types.ObjectId(user.id)
+    const assignedTask =
+      await taskRepository.assignTask(
+        taskId,
+        new Types.ObjectId(data.assignee),
+        new Types.ObjectId(user.id)
+      );
+
+    // Invalidate individual task cache
+    await cacheService.del(
+      cacheKeys.task(taskId)
+    );
+
+    // Invalidate all task-list caches
+    await cacheService.delPattern(
+      `tasks:${user.organizationId}:*`
+    );
+
+    // Invalidate dashboard cache
+    await cacheService.del(
+      cacheKeys.dashboard(
+        user.organizationId!
+      )
+    );
+
+    // Invalidate activity cache
+    await cacheService.del(
+      cacheKeys.activity(taskId)
     );
 
     await activityService.log({
@@ -431,6 +610,9 @@ class TaskService {
     return assignedTask;
   }
 
+  /**
+   * Update Task Status
+   */
   async updateTaskStatus(
     user: {
       id: string;
@@ -481,10 +663,33 @@ class TaskService {
       );
     }
 
-    const updatedTask = await taskRepository.updateTaskStatus(
-      taskId,
-      data.status,
-      new Types.ObjectId(user.id)
+    const updatedTask =
+      await taskRepository.updateTaskStatus(
+        taskId,
+        data.status,
+        new Types.ObjectId(user.id)
+      );
+
+    // Invalidate individual task cache
+    await cacheService.del(
+      cacheKeys.task(taskId)
+    );
+
+    // Invalidate all task-list caches
+    await cacheService.delPattern(
+      `tasks:${user.organizationId}:*`
+    );
+
+    // Invalidate dashboard cache
+    await cacheService.del(
+      cacheKeys.dashboard(
+        user.organizationId!
+      )
+    );
+
+    // Invalidate activity cache
+    await cacheService.del(
+      cacheKeys.activity(taskId)
     );
 
     await activityService.log({
@@ -500,6 +705,9 @@ class TaskService {
     return updatedTask;
   }
 
+  /**
+   * Delete Task
+   */
   async deleteTask(
     user: {
       id: string;
@@ -520,6 +728,28 @@ class TaskService {
     await taskRepository.softDeleteTask(
       taskId,
       new Types.ObjectId(user.id)
+    );
+
+    // Invalidate individual task cache
+    await cacheService.del(
+      cacheKeys.task(taskId)
+    );
+
+    // Invalidate all task-list caches
+    await cacheService.delPattern(
+      `tasks:${user.organizationId}:*`
+    );
+
+    // Invalidate dashboard cache
+    await cacheService.del(
+      cacheKeys.dashboard(
+        user.organizationId!
+      )
+    );
+
+    // Invalidate activity cache
+    await cacheService.del(
+      cacheKeys.activity(taskId)
     );
 
     return;

@@ -1,7 +1,8 @@
 import { Router } from "express";
 
 import { projectController } from "../controllers/project.controller";
-
+import { cacheMiddleware } from "../middleware/cache.middleware";
+import { cacheKeys } from "../cache/cache.keys";
 import { authenticate } from "../middleware/auth.middleware";
 import { authorize } from "../middleware/authorize.middleware";
 
@@ -21,6 +22,33 @@ router.post(
 router.get(
   "/",
   authenticate,
+  cacheMiddleware(
+    (req) => {
+      const organizationId =
+        req.user.organizationId;
+
+      const page =
+        Number(req.query.page) || 1;
+
+      const limit =
+        Number(req.query.limit) || 10;
+
+      const search =
+        req.query.search as string | undefined;
+
+      const sort =
+        req.query.sort as string | undefined;
+
+      return cacheKeys.projects(
+        organizationId!,
+        page,
+        limit,
+        search,
+        sort
+      );
+    },
+    120
+  ),
   projectController.getAllProjects
 );
 router.get(
