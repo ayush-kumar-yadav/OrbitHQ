@@ -1,7 +1,14 @@
+import { useEffect } from "react";
 import type { ReactNode } from "react";
 
 import Sidebar from "../components/layout/Sidebar";
 import Navbar from "../components/layout/Navbar";
+
+import { useAuth } from "../providers/AuthProvider";
+import {
+  connectSocket,
+  disconnectSocket,
+} from "../services/socket";
 
 type Props = {
   children: ReactNode;
@@ -10,6 +17,20 @@ type Props = {
 export default function DashboardLayout({
   children,
 }: Props) {
+  const { accessToken } = useAuth();
+
+  useEffect(() => {
+    if (!accessToken) {
+      return;
+    }
+
+    connectSocket(accessToken);
+
+    return () => {
+      disconnectSocket();
+    };
+  }, [accessToken]);
+
   return (
     <div className="flex min-h-screen">
       <Sidebar />

@@ -7,6 +7,9 @@ import { connectDB } from "./config/db";
 import { logger } from "./utils/logger";
 import { env } from "./config/env";
 import { redisService } from "./cache/redis.service";
+import http from "http";
+import { initializeSocket } from "./sockets/socket.server";
+import { initializeSocketPubSub } from "./sockets/socket.pubsub";
 const PORT = env.PORT;
 
 async function startServer() {
@@ -14,9 +17,15 @@ async function startServer() {
     await connectDB();
     await redisService.connect();
 
-    app.listen(PORT, () => {
-      logger.info(`🚀 Server running on port ${PORT}`);
-    });
+    const httpServer = http.createServer(app);
+
+initializeSocket(httpServer);
+await initializeSocketPubSub();
+httpServer.listen(PORT, () => {
+  logger.info(
+    `🚀 Server running on port ${PORT}`
+  );
+});
   } catch (error) {
     logger.error("Failed to start server");
     logger.error(error);

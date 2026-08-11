@@ -8,6 +8,10 @@ import { Types } from "mongoose";
 import { connectDB } from "../config/db";
 import { bullRedis } from "../queues/redis.connection";
 import { notificationRepository } from "../repositories/notification.repository";
+import {
+  redisService,
+} from "../cache/redis.service";
+import { CHANNEL } from "../sockets/socket.pubsub";
 
 interface NotificationJobData {
   userId: string;
@@ -20,10 +24,19 @@ interface NotificationJobData {
 
 const startWorker = async () => {
   try {
-    // Connect MongoDB
+    // MongoDB
     await connectDB();
 
-    console.log("🟢 Worker MongoDB connected");
+    console.log(
+      "🟢 Worker MongoDB connected"
+    );
+
+    // Redis Pub/Sub client
+    await redisService.connect();
+
+    console.log(
+      "🟢 Worker Redis connected"
+    );
 
     const notificationWorker =
       new Worker<NotificationJobData>(
@@ -39,6 +52,7 @@ const startWorker = async () => {
             job.data
           );
 
+          // 1. Save notification to MongoDB
           const notification =
             await notificationRepository.create({
               userId: new Types.ObjectId(
@@ -70,6 +84,22 @@ const startWorker = async () => {
 
           console.log(
             `🔔 Notification created: ${notification._id}`
+          );
+
+          // 2. Publish real-time event through Redis
+          await redisService
+  .getClient()
+  .publish(
+            CHANNEL,
+            JSON.stringify({
+              event: "notification:created",
+              userId: job.data.userId,
+              notification,
+            })
+          );
+
+          console.log(
+            `📡 Notification event published for user:${job.data.userId}`
           );
 
           return {
