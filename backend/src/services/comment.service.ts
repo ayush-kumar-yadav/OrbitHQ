@@ -90,15 +90,17 @@ class CommentService {
     });
 
     // 6. Queue notification for task assignee
-    if (task.assignee) {
-      await queueService.addNotificationJob({
-        userId: task.assignee.toString(),
-        type: "COMMENT_ADDED",
-        message: `A new comment was added to task ${taskId}`,
-        taskId,
-        actorId: authorId,
-      });
-    }
+    // Queue notification for task assignee
+if (task.assignee) {
+  await queueService.addNotificationJob({
+    userId: task.assignee._id.toString(),
+    organizationId,
+    type: "COMMENT_ADDED",
+    message: `A new comment was added to task ${taskId}`,
+    taskId,
+    actorId: authorId,
+  });
+}
 
     // 7. Return created comment
     return comment;

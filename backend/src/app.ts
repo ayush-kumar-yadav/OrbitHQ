@@ -11,6 +11,7 @@ import organizationRoutes from "./routes/organization.routes";
 import projectRoutes from "./routes/project.routes";
 import taskRoutes from "./routes/task.routes";
 import testQueueRoutes from "./routes/test.queue.routes";
+import notificationRoutes from "./routes/notification.routes";
 
 import { errorHandler } from "./middleware/errorHandler";
 import { requestId } from "./middleware/requestId";
@@ -35,6 +36,10 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Routes
+app.use(
+  "/api/v1/notifications",
+  notificationRoutes
+);
 app.use("/api/v1/dashboard", dashboardRoutes);
 app.use("/api/v1/health", healthRouter);
 app.use("/api/v1/auth", authRoutes);

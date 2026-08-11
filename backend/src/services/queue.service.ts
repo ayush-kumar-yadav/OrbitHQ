@@ -2,6 +2,7 @@ import { notificationQueue } from "../queues/notification.queue";
 
 interface NotificationJobData {
   userId: string;
+  organizationId: string;
   type: string;
   message: string;
   taskId?: string;
