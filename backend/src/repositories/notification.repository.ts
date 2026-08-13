@@ -1,4 +1,5 @@
-import { FilterQuery, Types } from "mongoose";
+import { Types } from "mongoose";
+
 import {
   Notification,
   INotification,
@@ -13,10 +14,14 @@ class NotificationRepository {
 
   async findByUser(
     userId: string,
+    organizationId: string,
     limit = 20
   ) {
     return Notification.find({
       userId: new Types.ObjectId(userId),
+      organizationId: new Types.ObjectId(
+        organizationId
+      ),
     })
       .sort({ createdAt: -1 })
       .limit(limit)
@@ -27,12 +32,16 @@ class NotificationRepository {
 
   async markAsRead(
     notificationId: string,
-    userId: string
+    userId: string,
+    organizationId: string
   ) {
     return Notification.findOneAndUpdate(
       {
-        _id: notificationId,
+        _id: new Types.ObjectId(notificationId),
         userId: new Types.ObjectId(userId),
+        organizationId: new Types.ObjectId(
+          organizationId
+        ),
       },
       {
         isRead: true,
@@ -43,9 +52,15 @@ class NotificationRepository {
     );
   }
 
-  async countUnread(userId: string) {
+  async countUnread(
+    userId: string,
+    organizationId: string
+  ) {
     return Notification.countDocuments({
       userId: new Types.ObjectId(userId),
+      organizationId: new Types.ObjectId(
+        organizationId
+      ),
       isRead: false,
     });
   }

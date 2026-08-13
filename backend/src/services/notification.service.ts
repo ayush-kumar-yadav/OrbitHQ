@@ -1,35 +1,41 @@
 import { HTTPSTATUS } from "../config/http.config";
 import { ApiError } from "../errors/ApiError";
+
 import { notificationRepository } from "../repositories/notification.repository";
 
 class NotificationService {
   async getNotifications(
     userId: string,
+    organizationId: string,
     limit?: number
   ) {
-    const notifications =
-      await notificationRepository.findByUser(
-        userId,
-        limit ?? 20
-      );
-
-    return notifications;
+    return notificationRepository.findByUser(
+      userId,
+      organizationId,
+      limit ?? 20
+    );
   }
 
-  async getUnreadCount(userId: string) {
+  async getUnreadCount(
+    userId: string,
+    organizationId: string
+  ) {
     return notificationRepository.countUnread(
-      userId
+      userId,
+      organizationId
     );
   }
 
   async markAsRead(
     notificationId: string,
-    userId: string
+    userId: string,
+    organizationId: string
   ) {
     const notification =
       await notificationRepository.markAsRead(
         notificationId,
-        userId
+        userId,
+        organizationId
       );
 
     if (!notification) {

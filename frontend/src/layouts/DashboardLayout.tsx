@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import type { ReactNode } from "react";
-
+import { useNotificationSocket } from "../hooks/notifications/useNotificationSocket";
 import Sidebar from "../components/layout/Sidebar";
 import Navbar from "../components/layout/Navbar";
 
@@ -19,26 +19,28 @@ export default function DashboardLayout({
 }: Props) {
   const { accessToken } = useAuth();
 
-  useEffect(() => {
-    if (!accessToken) {
-      return;
-    }
+useNotificationSocket();
 
-    connectSocket(accessToken);
+useEffect(() => {
+  if (!accessToken) {
+    return;
+  }
 
-    return () => {
-      disconnectSocket();
-    };
-  }, [accessToken]);
+  connectSocket(accessToken);
+
+  return () => {
+    disconnectSocket();
+  };
+}, [accessToken]);
 
   return (
     <div className="flex min-h-screen">
       <Sidebar />
 
-      <div className="flex-1 flex flex-col">
+      <div className="flex flex-1 flex-col">
         <Navbar />
 
-        <main className="p-6 flex-1 bg-slate-100">
+        <main className="flex-1 bg-slate-100 p-6">
           {children}
         </main>
       </div>

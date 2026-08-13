@@ -1,16 +1,21 @@
 import { useAuth } from "../../providers/AuthProvider";
+import NotificationBell from "../notifications/NotificationBell";
 
 export default function Navbar() {
   const { user } = useAuth();
 
   return (
-    <header className="h-16 border-b flex items-center justify-between px-6 bg-white">
+    <header className="flex h-16 items-center justify-between border-b bg-white px-6">
       <h2 className="text-lg font-semibold">
         Dashboard
       </h2>
 
-      <div>
-        {user?.name}
+      <div className="flex items-center gap-4">
+        <NotificationBell />
+
+        <div className="text-sm font-medium text-slate-700">
+          {user?.name}
+        </div>
       </div>
     </header>
   );
