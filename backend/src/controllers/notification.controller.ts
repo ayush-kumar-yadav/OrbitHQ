@@ -70,6 +70,20 @@ class NotificationController {
       );
     }
   );
+  markAllAsRead = asyncHandler(
+  async (req: Request, res: Response) => {
+    await notificationService.markAllAsRead(
+      req.user.id
+    );
+
+    return res.status(200).json(
+      successResponse(
+        null,
+        "All notifications marked as read"
+      )
+    );
+  }
+);
 
   markAsRead = asyncHandler(
     async (req: Request, res: Response) => {

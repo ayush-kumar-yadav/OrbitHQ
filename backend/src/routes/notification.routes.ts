@@ -16,6 +16,11 @@ router.get(
   "/unread-count",
   notificationController.getUnreadCount
 );
+router.patch(
+  "/read-all",
+  authenticate,
+  notificationController.markAllAsRead
+);
 
 router.patch(
   "/:id/read",

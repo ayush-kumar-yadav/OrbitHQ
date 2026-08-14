@@ -64,6 +64,19 @@ class NotificationRepository {
       isRead: false,
     });
   }
+  async markAllAsRead(userId: string) {
+  return Notification.updateMany(
+    {
+      userId: new Types.ObjectId(userId),
+      isRead: false,
+    },
+    {
+      $set: {
+        isRead: true,
+      },
+    }
+  );
+}
 }
 
 export const notificationRepository =

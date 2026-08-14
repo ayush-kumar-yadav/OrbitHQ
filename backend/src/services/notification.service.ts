@@ -25,6 +25,11 @@ class NotificationService {
       organizationId
     );
   }
+  async markAllAsRead(userId: string) {
+  return notificationRepository.markAllAsRead(
+    userId
+  );
+}
 
   async markAsRead(
     notificationId: string,
