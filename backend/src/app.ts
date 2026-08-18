@@ -12,7 +12,7 @@ import projectRoutes from "./routes/project.routes";
 import taskRoutes from "./routes/task.routes";
 import testQueueRoutes from "./routes/test.queue.routes";
 import notificationRoutes from "./routes/notification.routes";
-
+import searchRoutes from "./routes/search.routes";
 import { errorHandler } from "./middleware/errorHandler";
 import { requestId } from "./middleware/requestId";
 import { performanceMiddleware } from "./middleware/performance.middleware";
@@ -46,6 +46,7 @@ app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/organizations", organizationRoutes);
 app.use("/api/v1/projects", projectRoutes);
 app.use("/api/v1/tasks", taskRoutes);
+app.use("/api/v1/search",searchRoutes);
 app.use("/api/v1", commentRoutes);
 app.use("/api/v1", activityRoutes);
 app.use(

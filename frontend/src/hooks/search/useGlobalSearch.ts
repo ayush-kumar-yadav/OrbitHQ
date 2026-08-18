@@ -1,50 +1,78 @@
-import { useQuery } from "@tanstack/react-query";
+import {
+  useEffect,
+  useState,
+} from "react";
 
-import { globalSearchService } from "../../services/globalSearch.service";
+import {
+  globalSearch,
+} from "../../api/search.api";
+
+import type {
+  GlobalSearchResponse,
+} from "../../api/search.api";
 
 export function useGlobalSearch(
   query: string,
-  enabled: boolean
+  enabled = true
 ) {
-  return useQuery({
-    queryKey: ["global-search", query],
+  const [data, setData] =
+    useState<GlobalSearchResponse | null>(null);
 
-    queryFn: async () => {
-      const [
-        projects,
-        tasks,
-        members,
-      ] = await Promise.all([
-        globalSearchService.searchProjects(
-          query
-        ),
-        globalSearchService.searchTasks(
-          query
-        ),
-        globalSearchService.searchMembers(
-          query
-        ),
-      ]);
+  const [loading, setLoading] =
+    useState(false);
 
-      return {
-        projects:
-          projects?.data?.projects ??
-          projects?.data ??
-          [],
+  const [error, setError] =
+    useState<string | null>(null);
 
-        tasks:
-          tasks?.data?.tasks ??
-          tasks?.data ??
-          [],
+  useEffect(() => {
+    if (!enabled || !query.trim()) {
+      setData(null);
+      setLoading(false);
+      setError(null);
+      return;
+    }
 
-        members,
-      };
-    },
+    let cancelled = false;
 
-    enabled:
-      enabled &&
-      query.trim().length >= 2,
+    const timer = setTimeout(async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-    staleTime: 30 * 1000,
-  });
+        const result = await globalSearch(
+          query.trim()
+        );
+
+        if (!cancelled) {
+          setData(result);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error(
+            "Global search failed:",
+            err
+          );
+
+          setError(
+            "Unable to search right now."
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [query, enabled]);
+
+  return {
+    data,
+    loading,
+    error,
+  };
 }

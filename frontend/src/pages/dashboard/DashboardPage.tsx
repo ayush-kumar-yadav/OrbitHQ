@@ -8,7 +8,6 @@ import {
 
 import DashboardLayout from "../../layouts/DashboardLayout";
 
-import StatCard from "../../components/dashboard/StatCard";
 import RecentActivity from "../../components/dashboard/RecentActivity";
 import RecentProjects from "../../components/dashboard/RecentProjects";
 import UpcomingDeadlines from "../../components/dashboard/UpcomingDeadlines";
