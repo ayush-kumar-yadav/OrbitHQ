@@ -1,0 +1,89 @@
+:root {
+  --orbit-bg: #08090d;
+  --orbit-surface: #10121a;
+  --orbit-surface-2: #151822;
+
+  --orbit-border: rgba(255, 255, 255, 0.08);
+  --orbit-border-hover: rgba(255, 255, 255, 0.14);
+
+  --orbit-text: #f5f7fa;
+  --orbit-muted: #8d919d;
+  --orbit-subtle: #626775;
+
+  --orbit-primary: #4c6fff;
+  --orbit-primary-hover: #5c7cff;
+
+  --orbit-success: #2fd9c4;
+  --orbit-warning: #f5a623;
+  --orbit-danger: #ff5c6c;
+
+  --orbit-radius: 14px;
+  --orbit-radius-sm: 10px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+
+  background: var(--orbit-bg);
+  color: var(--orbit-text);
+
+  font-family:
+    Inter,
+    "Segoe UI",
+    system-ui,
+    sans-serif;
+}
+:root {
+  --orbit-bg: #08090d;
+  --orbit-surface: #10121a;
+  --orbit-surface-2: #151822;
+
+  --orbit-border: rgba(255, 255, 255, 0.08);
+  --orbit-border-hover: rgba(255, 255, 255, 0.15);
+
+  --orbit-text: #f5f7fa;
+  --orbit-muted: #8d919d;
+  --orbit-subtle: #626775;
+
+  --orbit-blue: #4c6fff;
+  --orbit-blue-hover: #5c7cff;
+
+  --orbit-cyan: #2fd9c4;
+  --orbit-yellow: #f5a623;
+  --orbit-red: #ff5c6c;
+
+  --orbit-radius: 14px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--orbit-bg);
+}
+
+body {
+  margin: 0;
+  background: var(--orbit-bg);
+  color: var(--orbit-text);
+
+  font-family:
+    Inter,
+    "Segoe UI",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
