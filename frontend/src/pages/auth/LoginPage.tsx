@@ -62,34 +62,43 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#08090D]">
+    <div className="orbit-auth-shell flex min-h-screen">
+      <div className="orbit-auth-ambient" />
+      <div className="orbit-auth-grid" />
 
       {/* Brand */}
-      <OrbitBrandPanel
-        heading="Every project, in its own orbit."
-        subheading="Sign in to keep track of what's moving and what's stuck, in one place."
-      />
+      <div className="orbit-auth-content flex">
+        <OrbitBrandPanel
+          heading="Every project, in its own orbit."
+          subheading="Sign in to keep track of what's moving and what's stuck, in one place."
+        />
+      </div>
 
       {/* Form */}
-      <div className="flex flex-1 items-center justify-center px-6 py-12">
+      <div className="orbit-auth-content flex flex-1 items-center justify-center px-6 py-12">
 
         <div className="w-full max-w-[430px]">
 
           {/* Mobile logo */}
-          <div className="mb-10 flex items-center gap-2 lg:hidden">
-            <span className="h-2 w-2 rounded-full bg-[#4C6FFF] shadow-[0_0_12px_rgba(76,111,255,0.8)]" />
+          <div className="mb-10 flex items-center gap-3 lg:hidden">
+            <span className="orbit-logo-mark h-8 w-8">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="2.4" fill="#4C6FFF" />
+                <ellipse cx="12" cy="12" rx="10" ry="4.2" stroke="#111" strokeWidth="1.3" />
+              </svg>
+            </span>
 
-            <span className="text-sm font-semibold text-white">
+            <span className="orbit-wordmark text-sm">
               OrbitHQ
             </span>
           </div>
 
-          <div className="mb-7">
-            <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#626775]">
-              WELCOME BACK
+          <div className="mb-7 orbit-reveal">
+            <p className="orbit-eyebrow mb-3">
+              Welcome back
             </p>
 
-            <h1 className="text-3xl font-semibold tracking-tight text-white">
+            <h1 className="font-display text-[32px] tracking-tight text-white">
               Sign in to OrbitHQ
             </h1>
 
@@ -98,7 +107,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <div className="rounded-2xl border border-white/[0.08] bg-[#10121A] p-7 shadow-2xl shadow-black/20">
+          <div className="orbit-card orbit-reveal p-7" style={{ ["--d" as string]: "0.1s" }}>
 
             <form
               onSubmit={handleSubmit(onSubmit)}
@@ -207,7 +216,7 @@ export default function LoginPage() {
                 disabled={
                   loginMutation.isPending
                 }
-                className="group flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#4C6FFF] text-sm font-semibold text-white transition hover:bg-[#5C7CFF] hover:shadow-[0_0_25px_rgba(76,111,255,0.2)] disabled:cursor-not-allowed disabled:opacity-50"
+                className="orbit-btn-solid group w-full"
               >
                 {loginMutation.isPending
                   ? "Signing in..."

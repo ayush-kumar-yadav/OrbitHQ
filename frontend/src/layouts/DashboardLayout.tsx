@@ -34,13 +34,13 @@ useEffect(() => {
 }, [accessToken]);
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-[#050608]">
       <Sidebar />
 
       <div className="flex flex-1 flex-col">
         <Navbar />
 
-        <main className="flex-1 bg-slate-100 p-6">
+        <main className="flex-1 bg-[#050608] p-6">
           {children}
         </main>
       </div>

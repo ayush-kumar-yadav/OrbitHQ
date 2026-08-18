@@ -1,44 +1,5 @@
 :root {
-  --orbit-bg: #08090d;
-  --orbit-surface: #10121a;
-  --orbit-surface-2: #151822;
-
-  --orbit-border: rgba(255, 255, 255, 0.08);
-  --orbit-border-hover: rgba(255, 255, 255, 0.14);
-
-  --orbit-text: #f5f7fa;
-  --orbit-muted: #8d919d;
-  --orbit-subtle: #626775;
-
-  --orbit-primary: #4c6fff;
-  --orbit-primary-hover: #5c7cff;
-
-  --orbit-success: #2fd9c4;
-  --orbit-warning: #f5a623;
-  --orbit-danger: #ff5c6c;
-
-  --orbit-radius: 14px;
-  --orbit-radius-sm: 10px;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-
-  background: var(--orbit-bg);
-  color: var(--orbit-text);
-
-  font-family:
-    Inter,
-    "Segoe UI",
-    system-ui,
-    sans-serif;
-}
-:root {
-  --orbit-bg: #08090d;
+  --orbit-bg: #050608;
   --orbit-surface: #10121a;
   --orbit-surface-2: #151822;
 
@@ -57,6 +18,11 @@ body {
   --orbit-red: #ff5c6c;
 
   --orbit-radius: 14px;
+  --orbit-radius-sm: 10px;
+
+  --orbit-sans: "Inter", "Segoe UI", system-ui, -apple-system,
+    BlinkMacSystemFont, sans-serif;
+  --orbit-display: "BubbledotICG-FinePos", "Geist Pixel Circle", monospace;
 }
 
 * {
@@ -71,14 +37,7 @@ body {
   margin: 0;
   background: var(--orbit-bg);
   color: var(--orbit-text);
-
-  font-family:
-    Inter,
-    "Segoe UI",
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: var(--orbit-sans);
 }
 
 button,
@@ -86,4 +45,156 @@ input,
 textarea,
 select {
   font: inherit;
+}
+
+.font-display {
+  font-family: var(--orbit-display);
+}
+
+/* Solid white button — no glow. Used for in-app form
+   submissions (login/register), where the landing page's
+   glow reads as too "marketing site" for a serious action. */
+.orbit-btn-solid {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 22px;
+  border-radius: var(--orbit-radius-sm);
+  border: none;
+  background: #ffffff;
+  color: #0a0a0a;
+  font-family: var(--orbit-sans);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+}
+
+.orbit-btn-solid:hover {
+  background: #e8e8e8;
+}
+
+.orbit-btn-solid:active {
+  transform: scale(0.99);
+}
+
+.orbit-btn-solid:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Shared entrance animation, same easing as landing.css */
+.orbit-reveal {
+  opacity: 0;
+  transform: translateY(18px) scale(0.98);
+  filter: blur(4px);
+  animation: orbit-reveal 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--d, 0s);
+}
+
+@keyframes orbit-reveal {
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orbit-reveal {
+    animation: none;
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+/* =========================================
+   Ambient background for auth pages.
+   Fixes the hard black void to the right of
+   the video panel — ties the whole viewport
+   together instead of "panel + empty room".
+========================================= */
+
+.orbit-auth-shell {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  background: var(--orbit-bg);
+}
+
+.orbit-auth-ambient {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+
+  background:
+    radial-gradient(
+      620px 420px at 78% 12%,
+      rgba(76, 111, 255, 0.16),
+      transparent 60%
+    ),
+    radial-gradient(
+      520px 420px at 60% 92%,
+      rgba(47, 217, 196, 0.08),
+      transparent 65%
+    ),
+    radial-gradient(
+      480px 360px at 8% 60%,
+      rgba(245, 166, 35, 0.05),
+      transparent 60%
+    );
+}
+
+.orbit-auth-grid {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.5;
+
+  background-image: radial-gradient(
+    rgba(255, 255, 255, 0.05) 1px,
+    transparent 1px
+  );
+  background-size: 34px 34px;
+
+  /* fade the grid out near the edges so it doesn't compete
+     with the video panel or read as a hard tiled pattern */
+  -webkit-mask-image: radial-gradient(
+    ellipse 70% 70% at 70% 45%,
+    black 40%,
+    transparent 85%
+  );
+  mask-image: radial-gradient(
+    ellipse 70% 70% at 70% 45%,
+    black 40%,
+    transparent 85%
+  );
+}
+
+/* Soft right-edge fade on the video brand panel so it
+   dissolves into the ambient background instead of
+   cutting off in a hard vertical line. */
+.orbit-panel-fade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -1px;
+  width: 140px;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--orbit-bg)
+  );
+}
+
+.orbit-auth-content {
+  position: relative;
+  z-index: 1;
 }
