@@ -15,39 +15,54 @@ export default function ProjectsPage() {
 
   return (
     <DashboardLayout>
-      <ProjectsHeader
-        onCreateProject={() => setShowCreateForm(true)}
-      />
+      <div className="mx-auto max-w-[1600px]">
 
-      {showCreateForm && (
-        <CreateProjectForm
-          onClose={() => setShowCreateForm(false)}
+        <ProjectsHeader
+          onCreateProject={() => setShowCreateForm(true)}
         />
-      )}
 
-      {isLoading && (
-        <p className="text-gray-500">
-          Loading projects...
-        </p>
-      )}
-
-      {error && (
-        <div className="rounded-lg border border-red-300 bg-red-50 p-4">
-          <p className="font-semibold text-red-600">
-            Something went wrong.
-          </p>
-        </div>
-      )}
-
-      {!isLoading && !error && (
-        data?.data.projects.length === 0 ? (
-          <EmptyProjects />
-        ) : (
-          <ProjectGrid
-            projects={data.data.projects}
+        {showCreateForm && (
+          <CreateProjectForm
+            onClose={() => setShowCreateForm(false)}
           />
-        )
-      )}
+        )}
+
+        {isLoading && <ProjectsSkeleton />}
+
+        {error && (
+          <div className="rounded-2xl border border-[#FF5C6C]/20 bg-[#10121A] px-8 py-7 text-center">
+            <p className="text-sm font-medium text-[#FF7B87]">
+              Failed to load projects.
+            </p>
+            <p className="mt-2 text-xs text-[#626775]">
+              Please refresh the page and try again.
+            </p>
+          </div>
+        )}
+
+        {!isLoading && !error && (
+          data?.data.projects.length === 0 ? (
+            <EmptyProjects />
+          ) : (
+            <ProjectGrid
+              projects={data.data.projects}
+            />
+          )
+        )}
+      </div>
     </DashboardLayout>
+  );
+}
+
+function ProjectsSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+      {[1, 2, 3, 4, 5, 6].map((i) => (
+        <div
+          key={i}
+          className="h-40 animate-pulse rounded-2xl border border-white/[0.07] bg-[#10121A]"
+        />
+      ))}
+    </div>
   );
 }

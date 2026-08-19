@@ -1,23 +1,21 @@
 import { useState } from "react";
+import { Plus } from "lucide-react";
 import { useCreateTask } from "../../hooks/tasks/useCreateTask";
 
 type Props = {
   projectId: string;
 };
 
-export default function CreateTaskForm({
-  projectId,
-}: Props) {
+export default function CreateTaskForm({ projectId }: Props) {
   const createTask = useCreateTask();
 
   const [title, setTitle] = useState("");
-  const [description, setDescription] =
-    useState("");
+  const [description, setDescription] = useState("");
 
-  async function handleSubmit(
-    e: React.FormEvent<HTMLFormElement>
-  ) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    if (!title.trim()) return;
 
     try {
       await createTask.mutateAsync({
@@ -34,44 +32,44 @@ export default function CreateTaskForm({
   }
 
   return (
-    <div className="rounded-xl border bg-white p-6 shadow-sm">
-      <h2 className="mb-5 text-xl font-semibold">
+    <div>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#626775]">
+        New
+      </p>
+      <h2 className="mt-1 font-display text-[17px] text-white">
         Create Task
       </h2>
 
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-4"
-      >
+      <form onSubmit={handleSubmit} className="mt-5 space-y-3">
         <input
           type="text"
           placeholder="Task title"
           value={title}
-          onChange={(e) =>
-            setTitle(e.target.value)
-          }
-          className="w-full rounded-lg border p-3"
+          onChange={(e) => setTitle(e.target.value)}
+          className="orbit-input"
           required
         />
 
         <textarea
-          placeholder="Description"
+          placeholder="Description (optional)"
           value={description}
-          onChange={(e) =>
-            setDescription(e.target.value)
-          }
+          onChange={(e) => setDescription(e.target.value)}
           rows={4}
-          className="w-full rounded-lg border p-3"
+          className="orbit-input !h-auto resize-none py-3"
         />
 
         <button
           type="submit"
-          disabled={createTask.isPending}
-          className="rounded-lg bg-blue-600 px-5 py-3 text-white hover:bg-blue-700 disabled:opacity-50"
+          disabled={createTask.isPending || !title.trim()}
+          className="orbit-btn-solid w-full"
         >
-          {createTask.isPending
-            ? "Creating..."
-            : "Create Task"}
+          {createTask.isPending ? (
+            "Creating..."
+          ) : (
+            <>
+              <Plus size={15} /> Create Task
+            </>
+          )}
         </button>
       </form>
     </div>

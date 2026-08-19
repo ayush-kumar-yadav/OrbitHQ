@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { X } from "lucide-react";
 import { useCreateProject } from "../../hooks/projects/useCreateProject";
 
 type CreateProjectFormProps = {
@@ -36,42 +37,52 @@ export default function CreateProjectForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="mb-8 mx-auto flex max-w-md flex-col gap-4 rounded-xl border bg-white p-6 shadow-sm"
+      className="orbit-reveal mb-6 mx-auto flex max-w-md flex-col gap-4 rounded-2xl border border-white/[0.07] bg-[#10121A] p-6"
     >
-      <h2 className="text-xl font-semibold">
-        Create New Project
-      </h2>
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-[17px] text-white">
+          Create New Project
+        </h2>
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-[#626775] transition hover:text-white"
+        >
+          <X size={16} />
+        </button>
+      </div>
 
       <input
         type="text"
-        placeholder="Project Name"
+        placeholder="Project name"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        className="rounded-lg border p-3"
+        className="orbit-input"
         required
       />
 
       <textarea
-        placeholder="Project Description"
+        placeholder="Project description (optional)"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
-        className="rounded-lg border p-3"
         rows={4}
+        className="orbit-input !h-auto resize-none py-3"
       />
 
-      <div className="flex justify-end gap-3">
+      <div className="flex justify-end gap-2.5">
         <button
           type="button"
           onClick={onClose}
-          className="rounded-lg border px-4 py-2 hover:bg-gray-100"
+          className="rounded-lg border border-white/[0.08] px-4 py-2 text-xs font-medium text-[#AEB2BD] transition hover:border-white/[0.16] hover:text-white"
         >
           Cancel
         </button>
 
         <button
           type="submit"
-          disabled={createProject.isPending}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+          disabled={createProject.isPending || !name.trim()}
+          className="orbit-btn-solid !px-4 !py-2"
         >
           {createProject.isPending
             ? "Creating..."

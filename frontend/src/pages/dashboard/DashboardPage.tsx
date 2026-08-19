@@ -90,7 +90,7 @@ export default function DashboardPage() {
                 </span>
               </div>
 
-              <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+              <h1 className="font-display text-3xl tracking-tight text-white sm:text-4xl">
                 Dashboard
               </h1>
 
@@ -151,10 +151,42 @@ export default function DashboardPage() {
         <section className="grid gap-5 xl:grid-cols-2">
 
           <DashboardPanel>
+            <div className="mb-5 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#626775]">
+                  Workspace
+                </p>
+                <h2 className="mt-1 font-display text-[17px] text-white">
+                  Recent Projects
+                </h2>
+              </div>
+              <a
+                href="/projects"
+                className="text-[#626775] transition hover:text-white"
+              >
+                <ArrowUpRight size={17} />
+              </a>
+            </div>
             <RecentProjects projects={projects} />
           </DashboardPanel>
 
           <DashboardPanel>
+            <div className="mb-5 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#626775]">
+                  Schedule
+                </p>
+                <h2 className="mt-1 font-display text-[17px] text-white">
+                  Upcoming Deadlines
+                </h2>
+              </div>
+              <a
+                href="/tasks"
+                className="text-[#626775] transition hover:text-white"
+              >
+                <ArrowUpRight size={17} />
+              </a>
+            </div>
             <UpcomingDeadlines tasks={upcomingTasks} />
           </DashboardPanel>
 
@@ -165,22 +197,6 @@ export default function DashboardPage() {
         {/* ================================================= */}
 
         <section>
-          <div className="mb-4 flex items-end justify-between">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#626775]">
-                Performance
-              </p>
-
-              <h2 className="mt-1 text-lg font-semibold text-white">
-                Productivity
-              </h2>
-            </div>
-
-            <span className="text-xs text-[#626775]">
-              Current workspace
-            </span>
-          </div>
-
           <div className="grid gap-5 xl:grid-cols-2">
 
             <DashboardPanel>
@@ -206,7 +222,7 @@ export default function DashboardPage() {
                 Workspace events
               </p>
 
-              <h2 className="mt-1 text-lg font-semibold text-white">
+              <h2 className="mt-1 font-display text-[17px] text-white">
                 Recent activity
               </h2>
             </div>

@@ -47,7 +47,7 @@ const workspaceNavigation = [
 
 export default function Sidebar() {
   return (
-    <aside className="hidden h-screen w-[250px] shrink-0 border-r border-white/[0.07] bg-[#0B0D12] lg:flex lg:flex-col">
+    <aside className="hidden h-screen w-[250px] shrink-0 border-r border-white/[0.07] bg-[#050608] lg:flex lg:flex-col">
       
       {/* Logo */}
       <div className="flex h-20 items-center px-6">
@@ -125,13 +125,7 @@ export default function Sidebar() {
                 <NavLink
                   key={item.label}
                   to={item.path}
-                  className={({ isActive }) =>
-                    `group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all ${
-                      isActive
-                        ? "bg-[#4C6FFF]/10 text-white"
-                        : "text-[#858A97] hover:bg-white/[0.04] hover:text-white"
-                    }`
-                  }
+                  className="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-[#858A97] transition-all hover:bg-white/[0.04] hover:text-white"
                 >
                   <Icon
                     size={17}

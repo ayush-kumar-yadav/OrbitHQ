@@ -23,53 +23,49 @@ export default function ProjectStats({
       title: "Tasks",
       value: tasks,
       icon: CheckSquare,
-      color: "text-blue-600",
-      bg: "bg-blue-50",
+      tone: "bg-[#4C6FFF]/10 text-[#7187FF]",
     },
     {
       title: "Members",
       value: members,
       icon: Users,
-      color: "text-green-600",
-      bg: "bg-green-50",
+      tone: "bg-[#2FD9C4]/10 text-[#2FD9C4]",
     },
     {
       title: "Comments",
       value: comments,
       icon: MessageSquare,
-      color: "text-yellow-600",
-      bg: "bg-yellow-50",
+      tone: "bg-[#F5A623]/10 text-[#F5A623]",
     },
     {
       title: "Activity",
       value: activity,
       icon: Activity,
-      color: "text-purple-600",
-      bg: "bg-purple-50",
+      tone: "bg-white/[0.06] text-[#8D919D]",
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {stats.map((stat) => {
         const Icon = stat.icon;
 
         return (
           <div
             key={stat.title}
-            className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+            className="group rounded-2xl border border-white/[0.07] bg-[#10121A] p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-white/[0.12]"
           >
             <div
-              className={`flex h-12 w-12 items-center justify-center rounded-lg ${stat.bg}`}
+              className={`flex h-10 w-10 items-center justify-center rounded-xl ${stat.tone}`}
             >
-              <Icon className={`h-6 w-6 ${stat.color}`} />
+              <Icon size={18} />
             </div>
 
-            <p className="mt-5 text-sm font-medium text-gray-500">
+            <p className="mt-5 text-xs font-medium text-[#626775]">
               {stat.title}
             </p>
 
-            <h3 className="mt-1 text-3xl font-bold text-gray-900">
+            <h3 className="mt-1 text-3xl font-semibold tracking-tight text-white">
               {stat.value}
             </h3>
           </div>

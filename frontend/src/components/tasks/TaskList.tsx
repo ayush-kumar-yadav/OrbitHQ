@@ -1,67 +1,98 @@
-import { useTasks } from "../../hooks/tasks/useTasks";
 import { useNavigate } from "react-router-dom";
+import { ListTodo, ArrowUpRight } from "lucide-react";
+import { useTasks } from "../../hooks/tasks/useTasks";
 
 type Props = {
   projectId: string;
 };
 
-export default function TaskList({
-  projectId,
-}: Props) {
-    const navigate = useNavigate();
-  const { data, isLoading, error } =
-    useTasks(projectId);
+const STATUS_META: Record<string, { label: string; color: string }> = {
+  TODO: { label: "To do", color: "#8D919D" },
+  IN_PROGRESS: { label: "In progress", color: "#4C6FFF" },
+  IN_REVIEW: { label: "In review", color: "#F5A623" },
+  DONE: { label: "Done", color: "#2FD9C4" },
+};
 
-  if (isLoading) {
-    return (
-      <div className="rounded-xl border bg-white p-6 shadow-sm">
-        Loading tasks...
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="rounded-xl border bg-white p-6 shadow-sm text-red-500">
-        Failed to load tasks.
-      </div>
-    );
-  }
+export default function TaskList({ projectId }: Props) {
+  const navigate = useNavigate();
+  const { data, isLoading, error } = useTasks(projectId);
 
   const tasks = data?.data?.tasks || [];
 
   return (
-    <div className="rounded-xl border bg-white p-6 shadow-sm">
-      <h2 className="mb-5 text-xl font-semibold">
+    <div>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#626775]">
+        Overview
+      </p>
+      <h2 className="mt-1 font-display text-[17px] text-white">
         Tasks
       </h2>
 
-      {tasks.length === 0 ? (
-        <p className="text-gray-500">
-          No tasks yet.
-        </p>
-      ) : (
-        <div className="space-y-3">
-          {tasks.map((task: any) => (
+      {isLoading && (
+        <div className="mt-5 space-y-2.5">
+          {[1, 2, 3].map((i) => (
             <div
-  key={task._id}
-  onClick={() => navigate(`/tasks/${task._id}`)}
-  className="cursor-pointer rounded-lg border p-4 transition hover:border-blue-500 hover:bg-blue-50"
->
-              <h3 className="font-semibold">
-                {task.title}
-              </h3>
-
-              <p className="mt-1 text-sm text-gray-600">
-                {task.description ||
-                  "No description"}
-              </p>
-
-              <div className="mt-3 text-sm text-gray-500">
-                Status: {task.status}
-              </div>
-            </div>
+              key={i}
+              className="h-16 animate-pulse rounded-xl bg-white/[0.03]"
+            />
           ))}
+        </div>
+      )}
+
+      {error && (
+        <p className="mt-5 text-sm text-[#FF7B87]">
+          Failed to load tasks.
+        </p>
+      )}
+
+      {!isLoading && !error && tasks.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-10 text-center">
+          <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-white/[0.04]">
+            <ListTodo size={18} className="text-[#4F5460]" />
+          </div>
+          <p className="text-sm text-[#8D919D]">No tasks yet.</p>
+        </div>
+      )}
+
+      {!isLoading && tasks.length > 0 && (
+        <div className="mt-4 space-y-1.5">
+          {tasks.map((task: any) => {
+            const status = STATUS_META[task.status] ?? STATUS_META.TODO;
+
+            return (
+              <div
+                key={task._id}
+                onClick={() => navigate(`/tasks/${task._id}`)}
+                className="group flex cursor-pointer items-center gap-3 rounded-xl border border-transparent px-2 py-2.5 transition hover:border-white/[0.08] hover:bg-white/[0.03]"
+              >
+                <span
+                  className="h-2 w-2 shrink-0 rounded-full"
+                  style={{ backgroundColor: status.color }}
+                />
+
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-[#EDEEF2]">
+                    {task.title}
+                  </p>
+                  <p className="mt-0.5 truncate text-xs text-[#626775]">
+                    {task.description || "No description"}
+                  </p>
+                </div>
+
+                <span
+                  className="shrink-0 text-[11px] font-medium"
+                  style={{ color: status.color }}
+                >
+                  {status.label}
+                </span>
+
+                <ArrowUpRight
+                  size={14}
+                  className="shrink-0 text-[#4F5460] opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100"
+                />
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
