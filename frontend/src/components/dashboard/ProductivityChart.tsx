@@ -30,12 +30,33 @@ function ChartTooltip({ active, payload, label }: any) {
 export default function ProductivityChart({ tasks }: Props) {
   const week = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+  // Start of the current week (Sunday 00:00:00, local time).
+  const now = new Date();
+  const startOfWeek = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() - now.getDay()
+  );
+
+  // Exclusive end: the following Sunday 00:00:00.
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(endOfWeek.getDate() + 7);
+
+  // Only tasks actually created in the current week count toward
+  // "this week" — previously this filtered on nothing, so a task
+  // from any past week landed in whichever weekday bucket matched
+  // its createdAt, silently inflating the chart.
+  const tasksThisWeek = tasks.filter((task) => {
+    if (!task.createdAt) return false;
+    const createdAt = new Date(task.createdAt);
+    return createdAt >= startOfWeek && createdAt < endOfWeek;
+  });
+
   const chartData = week.map((day, index) => ({
     day,
-    tasks: tasks.filter((task) => {
-      if (!task.createdAt) return false;
-      return new Date(task.createdAt).getDay() === index;
-    }).length,
+    tasks: tasksThisWeek.filter(
+      (task) => new Date(task.createdAt).getDay() === index
+    ).length,
   }));
 
   const total = chartData.reduce((sum, d) => sum + d.tasks, 0);

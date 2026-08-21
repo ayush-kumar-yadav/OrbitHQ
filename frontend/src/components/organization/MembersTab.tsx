@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { UserPlus, Users } from "lucide-react";
+import { UserPlus, Users, Info } from "lucide-react";
+import { toast } from "sonner";
 
 import { useMembers } from "../../hooks/organizations/useMembers";
 import { useInviteMember } from "../../hooks/organizations/useInviteMember";
@@ -11,14 +12,45 @@ const ROLE_META: Record<string, { color: string }> = {
   VIEWER: { color: "#8D919D" },
 };
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function MembersTab() {
   const { data } = useMembers();
   const invite = useInviteMember();
 
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("DEVELOPER");
+  const [touched, setTouched] = useState(false);
 
   const members = data?.data || [];
+
+  const trimmedEmail = email.trim();
+  const isValidEmail = EMAIL_PATTERN.test(trimmedEmail);
+  const showEmailError = touched && trimmedEmail.length > 0 && !isValidEmail;
+
+  async function handleInvite() {
+    setTouched(true);
+
+    if (!isValidEmail) return;
+
+    try {
+      await invite.mutateAsync({ email: trimmedEmail, role });
+
+      toast.success("Member added", {
+        description: `${trimmedEmail} now has access to this organization.`,
+      });
+
+      setEmail("");
+      setTouched(false);
+    } catch (error: any) {
+      // The backend's message is already specific and accurate here
+      // ("User not found", "User already belongs to an organization",
+      // etc) — surface it directly rather than a generic fallback.
+      toast.error(
+        error.response?.data?.message ?? "Couldn't add this member."
+      );
+    }
+  }
 
   return (
     <div className="space-y-5">
@@ -91,13 +123,31 @@ export default function MembersTab() {
           Invite Member
         </h2>
 
-        <div className="mt-4 flex flex-col gap-2.5 sm:flex-row">
-          <input
-            placeholder="name@company.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="orbit-input flex-1"
-          />
+        <div className="mt-3 flex items-start gap-2 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
+          <Info size={13} className="mt-0.5 shrink-0 text-[#626775]" />
+          <p className="text-[11px] leading-relaxed text-[#8D919D]">
+            The person needs an existing OrbitHQ account with this email
+            and no other organization yet — email invites for new
+            signups aren't set up in this version.
+          </p>
+        </div>
+
+        <div className="mt-3 flex flex-col gap-2.5 sm:flex-row">
+          <div className="flex-1">
+            <input
+              placeholder="name@company.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onBlur={() => setTouched(true)}
+              className="orbit-input w-full"
+            />
+
+            {showEmailError && (
+              <p className="mt-1.5 text-[11px] text-[#FF6B78]">
+                Enter a valid email address.
+              </p>
+            )}
+          </div>
 
           <select
             value={role}
@@ -111,9 +161,9 @@ export default function MembersTab() {
           </select>
 
           <button
-            onClick={() => invite.mutate({ email, role })}
-            disabled={invite.isPending || !email.trim()}
-            className="orbit-btn-solid shrink-0 sm:w-auto"
+            onClick={handleInvite}
+            disabled={invite.isPending || !trimmedEmail}
+            className="orbit-btn-solid h-11 shrink-0 sm:w-auto"
           >
             {invite.isPending ? (
               "Inviting..."

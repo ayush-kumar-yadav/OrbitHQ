@@ -8,8 +8,6 @@ import { taskService } from "../services/task.service";
 class TaskController {
   createTask = asyncHandler(
   async (req: Request, res: Response) => {
-    console.log("REQ BODY:", req.body);
-
     const task = await taskService.createTask(
       {
         id: req.user.id,

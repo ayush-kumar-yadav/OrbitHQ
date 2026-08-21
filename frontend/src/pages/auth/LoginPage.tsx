@@ -47,7 +47,8 @@ export default function LoginPage() {
 
       login(
         response.data.user,
-        response.data.accessToken
+        response.data.accessToken,
+        response.data.refreshToken
       );
 
       navigate("/dashboard");

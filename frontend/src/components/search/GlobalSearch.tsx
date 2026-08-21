@@ -1,5 +1,7 @@
 import {
+  forwardRef,
   useEffect,
+  useImperativeHandle,
   useRef,
   useState,
 } from "react";
@@ -132,7 +134,12 @@ function ResultGroup({
 }
 
 
-export default function GlobalSearch() {
+export type GlobalSearchHandle = {
+  open: () => void;
+};
+
+const GlobalSearch = forwardRef<GlobalSearchHandle>(
+  function GlobalSearch(_props, ref) {
   const navigate = useNavigate();
 
   const [open, setOpen] =
@@ -292,6 +299,10 @@ export default function GlobalSearch() {
     }, 0);
   }
 
+  useImperativeHandle(ref, () => ({
+    open: openSearch,
+  }));
+
 
   /*
    * Calculate group offsets
@@ -313,12 +324,12 @@ export default function GlobalSearch() {
 
   return (
     <>
-      {/* Search trigger */}
+      {/* Search trigger (desktop only — mobile opens this via the ref) */}
 
       <button
         type="button"
         onClick={openSearch}
-        className="flex h-9 w-[230px] items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-left transition hover:border-white/[0.14] hover:bg-white/[0.05]"
+        className="hidden h-9 w-[230px] items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-left transition hover:border-white/[0.14] hover:bg-white/[0.05] md:flex"
       >
         <Search
           size={15}
@@ -577,4 +588,7 @@ export default function GlobalSearch() {
       )}
     </>
   );
-}
+  }
+);
+
+export default GlobalSearch;

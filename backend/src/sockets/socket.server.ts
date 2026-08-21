@@ -2,6 +2,7 @@ import { Server } from "socket.io";
 import { Server as HttpServer } from "http";
 import jwt from "jsonwebtoken";
 import { socketService } from "./socket.service";
+import { env } from "../config/env";
 
 interface SocketUser {
   userId: string;
@@ -13,7 +14,7 @@ export function initializeSocket(
 ) {
   const io = new Server(httpServer, {
     cors: {
-      origin: "http://localhost:5173",
+      origin: env.CLIENT_URL,
       credentials: true,
     },
   });

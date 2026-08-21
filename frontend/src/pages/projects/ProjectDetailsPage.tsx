@@ -5,6 +5,8 @@ import DashboardLayout from "../../layouts/DashboardLayout";
 import { useProject } from "../../hooks/projects/useProject";
 import { useArchiveProject } from "../../hooks/projects/useArchiveProject";
 import { useDeleteProject } from "../../hooks/projects/useDeleteProject";
+import { useTasks } from "../../hooks/tasks/useTasks";
+import { useMembers } from "../../hooks/organizations/useMembers";
 
 import MembersTab from "../../components/organization/MembersTab";
 import ProjectStats from "../../components/projects/ProjectStats";
@@ -28,6 +30,19 @@ export default function ProjectDetailsPage() {
 
   const archiveProject = useArchiveProject();
   const deleteProject = useDeleteProject();
+
+  // Real counts for the Overview stat cards. Tasks are scoped to this
+  // project; members reflect the organization (OrbitHQ doesn't have
+  // per-project membership yet, so this is the most accurate number
+  // currently available). Comments/Activity totals would need a new
+  // aggregate backend endpoint (there's currently only per-task
+  // comment/activity lookups) — left at 0 until that exists, matching
+  // the "Coming soon" state already shown on the Activity tab below.
+  const { data: tasksData } = useTasks(id);
+  const { data: membersData } = useMembers();
+
+  const taskCount = tasksData?.data?.tasks?.length ?? 0;
+  const memberCount = membersData?.data?.length ?? 0;
 
   if (isLoading) {
     return (
@@ -125,7 +140,12 @@ export default function ProjectDetailsPage() {
 
         {activeTab === "Overview" && (
           <>
-            <ProjectStats tasks={0} members={1} comments={0} activity={0} />
+            <ProjectStats
+              tasks={taskCount}
+              members={memberCount}
+              comments={0}
+              activity={0}
+            />
 
             <div className="grid gap-5 xl:grid-cols-2">
               <div className="rounded-2xl border border-white/[0.07] bg-[#10121A] p-5">

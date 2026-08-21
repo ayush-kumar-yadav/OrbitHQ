@@ -17,6 +17,7 @@ import { errorHandler } from "./middleware/errorHandler";
 import { requestId } from "./middleware/requestId";
 import { performanceMiddleware } from "./middleware/performance.middleware";
 import dashboardRoutes from "./routes/dashboard.routes";
+import { env } from "./config/env";
 
 
 const app = express();
@@ -27,7 +28,8 @@ app.use(performanceMiddleware);
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: env.CLIENT_URL,
+    credentials: true,
   })
 );
 app.use(helmet());
@@ -49,10 +51,14 @@ app.use("/api/v1/tasks", taskRoutes);
 app.use("/api/v1/search",searchRoutes);
 app.use("/api/v1", commentRoutes);
 app.use("/api/v1", activityRoutes);
-app.use(
-  "/api/v1",
-  testQueueRoutes
-);
+
+// Dev-only: manually enqueue a test BullMQ job. Was previously
+// mounted unconditionally, which meant a deployed instance would
+// publicly expose an endpoint that exists purely for local queue
+// testing.
+if (env.NODE_ENV !== "production") {
+  app.use("/api/v1", testQueueRoutes);
+}
 // Error Handler (Always Last)
 app.use(errorHandler);
 

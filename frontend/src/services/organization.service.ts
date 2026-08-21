@@ -12,6 +12,14 @@ export const organizationService = {
     return response.data;
   },
 
+  async getMyOrganization() {
+    const response = await api.get(
+      "/organizations/me"
+    );
+
+    return response.data;
+  },
+
   async getMembers() {
     const response = await api.get(
       "/organizations/members"

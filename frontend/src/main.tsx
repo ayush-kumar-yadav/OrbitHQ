@@ -1,5 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { Toaster } from "sonner";
 import { AuthProvider } from "./providers/AuthProvider";
 import "./index.css";
 import App from "./App";
@@ -11,6 +12,18 @@ createRoot(document.getElementById("root")!).render(
     <QueryProvider>
     <AuthProvider>
         <App />
+        <Toaster
+          theme="dark"
+          richColors
+          position="top-right"
+          toastOptions={{
+            style: {
+              background: "#10121A",
+              border: "1px solid rgba(255,255,255,0.08)",
+              color: "#F5F7FA",
+            },
+          }}
+        />
     </AuthProvider>
 </QueryProvider>
   </StrictMode>

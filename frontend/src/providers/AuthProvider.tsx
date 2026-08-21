@@ -2,7 +2,6 @@ import {
     createContext,
     useContext,
     useState,
-    useEffect
 } from "react";
 import type { ReactNode } from "react";
 import type { User } from "../types/auth";
@@ -10,8 +9,9 @@ import type { User } from "../types/auth";
 type AuthContextType = {
   user: User | null;
   accessToken: string | null;
+  isAuthReady: boolean;
 
-  login: (user: User, token: string) => void;
+  login: (user: User, token: string, refreshToken?: string) => void;
   logout: () => void;
 };
 
@@ -19,28 +19,38 @@ const AuthContext = createContext<AuthContextType | null>(
   null
 );
 
+function readStoredUser(): User | null {
+  try {
+    const storedUser = localStorage.getItem("user");
+    return storedUser ? JSON.parse(storedUser) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({
   children,
 }: {
   children: ReactNode;
 }) {
-  const [user, setUser] = useState<User | null>(null);
+  // Lazy initializers run synchronously during the first render,
+  // so `user`/`accessToken` are already correct before any child
+  // (like ProtectedRoute) gets a chance to read them. This avoids
+  // the old race where a useEffect restored the token *after*
+  // ProtectedRoute had already redirected to /login on refresh.
+  const [user, setUser] = useState<User | null>(readStoredUser);
 
-  const [accessToken, setAccessToken] =
-    useState<string | null>(null);
-  useEffect(() => {
-  const token = localStorage.getItem("accessToken");
-  const storedUser = localStorage.getItem("user");
+  const [accessToken, setAccessToken] = useState<string | null>(
+    () => localStorage.getItem("accessToken")
+  );
 
-  if (token && storedUser) {
-    setAccessToken(token);
-    setUser(JSON.parse(storedUser));
-  }
-}, []);
-
-  function login(user: User, token: string) {
+  function login(user: User, token: string, refreshToken?: string) {
   localStorage.setItem("accessToken", token);
   localStorage.setItem("user", JSON.stringify(user));
+
+  if (refreshToken) {
+    localStorage.setItem("refreshToken", refreshToken);
+  }
 
   setUser(user);
   setAccessToken(token);
@@ -48,6 +58,7 @@ export function AuthProvider({
 
 function logout() {
   localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
   localStorage.removeItem("user");
 
   setUser(null);
@@ -58,6 +69,7 @@ function logout() {
       value={{
         user,
         accessToken,
+        isAuthReady: true,
         login,
         logout,
       }}

@@ -16,7 +16,9 @@ import ProjectDetailsPage from "../pages/projects/ProjectDetailsPage";
 
 import OrganizationsPage from "../pages/organizations/OrganizationsPage";
 
+import TasksPage from "../pages/tasks/TasksPage";
 import TaskDetailsPage from "../pages/tasks/TaskDetailsPage";
+import KanbanPage from "../pages/tasks/KanbanPage";
 
 import NotFoundPage from "../pages/errors/NotFoundPage";
 
@@ -74,6 +76,24 @@ export default function AppRouter() {
           element={
             <ProtectedRoute>
               <ProjectDetailsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/tasks"
+          element={
+            <ProtectedRoute>
+              <TasksPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/tasks/kanban"
+          element={
+            <ProtectedRoute>
+              <KanbanPage />
             </ProtectedRoute>
           }
         />
