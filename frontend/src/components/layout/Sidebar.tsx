@@ -1,10 +1,12 @@
+import { useEffect } from "react";
 import {
   Building2,
   CheckSquare,
   FolderKanban,
   LayoutDashboard,
+  X,
 } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 
 import { useAuth } from "../../providers/AuthProvider";
 import { useMyOrganization } from "../../hooks/organizations/useMyOrganization";
@@ -42,7 +44,17 @@ const workspaceNavigation = [
   },
 ];
 
-export default function Sidebar() {
+type Props = {
+  // Only used by the mobile drawer variant — the desktop sidebar is
+  // always visible and needs neither.
+  onNavigate?: () => void;
+};
+
+// Shared between the always-visible desktop sidebar and the mobile
+// slide-in drawer, so the two never drift out of sync with each
+// other (previously there was no mobile version at all — the entire
+// nav just disappeared below the lg breakpoint with no replacement).
+function SidebarContent({ onNavigate }: Props) {
   const { user } = useAuth();
   const { data } = useMyOrganization();
 
@@ -51,12 +63,12 @@ export default function Sidebar() {
   const orgInitial = orgName.charAt(0).toUpperCase();
 
   return (
-    <aside className="hidden h-screen w-[250px] shrink-0 border-r border-white/[0.07] bg-[#050608] lg:flex lg:flex-col">
-      
+    <>
       {/* Logo */}
       <div className="flex h-20 items-center px-6">
         <NavLink
           to="/dashboard"
+          onClick={onNavigate}
           className="flex items-center gap-3"
         >
           <span className="h-2.5 w-2.5 rounded-full bg-[#4C6FFF] shadow-[0_0_14px_rgba(76,111,255,0.8)]" />
@@ -83,6 +95,7 @@ export default function Sidebar() {
                 <NavLink
                   key={item.label}
                   to={item.path}
+                  onClick={onNavigate}
                   className={({ isActive }) =>
                     `group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all ${
                       isActive
@@ -129,6 +142,7 @@ export default function Sidebar() {
                 <NavLink
                   key={item.label}
                   to={item.path}
+                  onClick={onNavigate}
                   className={({ isActive }) =>
                     `group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all ${
                       isActive
@@ -181,6 +195,60 @@ export default function Sidebar() {
           </div>
         </div>
       </div>
+    </>
+  );
+}
+
+export default function Sidebar() {
+  return (
+    <aside className="hidden h-screen w-[250px] shrink-0 border-r border-white/[0.07] bg-[#050608] lg:flex lg:flex-col">
+      <SidebarContent />
     </aside>
+  );
+}
+
+type MobileDrawerProps = {
+  open: boolean;
+  onClose: () => void;
+};
+
+// Slide-in drawer used below the lg breakpoint, where the desktop
+// <Sidebar> is display:none. Previously there was no mobile
+// equivalent at all — the nav simply vanished.
+export function MobileSidebarDrawer({ open, onClose }: MobileDrawerProps) {
+  const { pathname } = useLocation();
+
+  // Close automatically whenever the route changes (i.e. after
+  // tapping a nav link), rather than requiring a separate tap on
+  // the backdrop or close button every time.
+  useEffect(() => {
+    if (open) onClose();
+    // Only re-run on pathname change — including `open`/`onClose`
+    // here would close the drawer the instant it opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 lg:hidden">
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      <aside className="relative flex h-full w-[280px] max-w-[80vw] flex-col border-r border-white/[0.07] bg-[#050608] shadow-2xl">
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close menu"
+          className="absolute right-3 top-6 flex h-8 w-8 items-center justify-center rounded-lg text-[#8D919D] transition hover:bg-white/[0.05] hover:text-white"
+        >
+          <X size={16} />
+        </button>
+
+        <SidebarContent onNavigate={onClose} />
+      </aside>
+    </div>
   );
 }

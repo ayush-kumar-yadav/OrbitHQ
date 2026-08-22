@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import DashboardLayout from "../../layouts/DashboardLayout";
+import ErrorState from "../../components/common/ErrorState";
 import { useProjects } from "../../hooks/projects/useProjects";
 
 import ProjectsHeader from "../../components/projects/ProjectsHeader";
@@ -9,7 +10,7 @@ import ProjectGrid from "../../components/projects/ProjectGrid";
 import EmptyProjects from "../../components/projects/EmptyProjects";
 
 export default function ProjectsPage() {
-  const { data, isLoading, error } = useProjects();
+  const { data, isLoading, error, refetch, isRefetching } = useProjects();
 
   const [showCreateForm, setShowCreateForm] = useState(false);
 
@@ -30,14 +31,13 @@ export default function ProjectsPage() {
         {isLoading && <ProjectsSkeleton />}
 
         {error && (
-          <div className="rounded-2xl border border-[#FF5C6C]/20 bg-[#10121A] px-8 py-7 text-center">
-            <p className="text-sm font-medium text-[#FF7B87]">
-              Failed to load projects.
-            </p>
-            <p className="mt-2 text-xs text-[#626775]">
-              Please refresh the page and try again.
-            </p>
-          </div>
+          <ErrorState
+            title="Failed to load projects."
+            description="Please try again."
+            onRetry={() => refetch()}
+            isRetrying={isRefetching}
+            className=""
+          />
         )}
 
         {!isLoading && !error && (

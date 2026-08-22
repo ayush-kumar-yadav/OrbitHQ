@@ -58,4 +58,10 @@ async updateTask(
   return response.data;
 },
 
+async deleteTask(taskId: string) {
+  const response = await api.delete(`/tasks/${taskId}`);
+
+  return response.data;
+},
+
 };

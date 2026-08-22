@@ -15,7 +15,7 @@ const STATUS_META: Record<string, { label: string; color: string }> = {
 
 export default function TaskList({ projectId }: Props) {
   const navigate = useNavigate();
-  const { data, isLoading, error } = useTasks(projectId);
+  const { data, isLoading, error, refetch, isRefetching } = useTasks(projectId);
 
   const tasks = data?.data?.tasks || [];
 
@@ -40,9 +40,19 @@ export default function TaskList({ projectId }: Props) {
       )}
 
       {error && (
-        <p className="mt-5 text-sm text-[#FF7B87]">
-          Failed to load tasks.
-        </p>
+        <div className="mt-5 flex items-center gap-3">
+          <p className="text-sm text-[#FF7B87]">
+            Failed to load tasks.
+          </p>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            disabled={isRefetching}
+            className="text-xs font-medium text-[#8D919D] underline underline-offset-2 transition hover:text-white disabled:opacity-50"
+          >
+            {isRefetching ? "Retrying..." : "Retry"}
+          </button>
+        </div>
       )}
 
       {!isLoading && !error && tasks.length === 0 && (

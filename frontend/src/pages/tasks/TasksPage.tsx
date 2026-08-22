@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { LayoutGrid, ListChecks } from "lucide-react";
 
 import DashboardLayout from "../../layouts/DashboardLayout";
+import ErrorState from "../../components/common/ErrorState";
 import { useTasks } from "../../hooks/tasks/useTasks";
 import TaskCard from "../../components/tasks/TaskCard";
 
@@ -15,7 +16,7 @@ const TABS = [
 ];
 
 export default function TasksPage() {
-  const { data, isLoading, error } = useTasks();
+  const { data, isLoading, error, refetch, isRefetching } = useTasks();
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState("ALL");
@@ -95,16 +96,12 @@ export default function TasksPage() {
         {isLoading ? (
           <TasksSkeleton />
         ) : error ? (
-          <div className="flex min-h-[300px] items-center justify-center">
-            <div className="rounded-2xl border border-[#FF5C6C]/20 bg-[#10121A] px-8 py-7 text-center">
-              <p className="text-sm font-medium text-[#FF7B87]">
-                Failed to load tasks.
-              </p>
-              <p className="mt-2 text-xs text-[#626775]">
-                Please refresh the page and try again.
-              </p>
-            </div>
-          </div>
+          <ErrorState
+            title="Failed to load tasks."
+            description="Please try again."
+            onRetry={() => refetch()}
+            isRetrying={isRefetching}
+          />
         ) : tasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-2xl border border-white/[0.07] bg-[#10121A] py-16 text-center">
             <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-white/[0.04]">

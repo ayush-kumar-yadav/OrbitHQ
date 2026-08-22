@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
+import { toast } from "sonner";
 import { useCreateTask } from "../../hooks/tasks/useCreateTask";
 
 type Props = {
@@ -24,10 +25,17 @@ export default function CreateTaskForm({ projectId }: Props) {
         projectId,
       });
 
+      toast.success("Task created");
+
       setTitle("");
       setDescription("");
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      // Previously this only logged to the console — a failed
+      // request (bad permissions, validation, network issue) looked
+      // identical to nothing happening at all.
+      toast.error(
+        err.response?.data?.message ?? "Couldn't create task."
+      );
     }
   }
 

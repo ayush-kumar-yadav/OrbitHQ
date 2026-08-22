@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 
 import DashboardLayout from "../../layouts/DashboardLayout";
+import ErrorState from "../../components/common/ErrorState";
 
 import RecentActivity from "../../components/dashboard/RecentActivity";
 import RecentProjects from "../../components/dashboard/RecentProjects";
@@ -19,7 +20,7 @@ import { useProjects } from "../../hooks/projects/useProjects";
 import { useTasks } from "../../hooks/tasks/useTasks";
 
 export default function DashboardPage() {
-  const { data, isLoading, error } = useDashboard();
+  const { data, isLoading, error, refetch, isRefetching } = useDashboard();
   const { data: projectsData } = useProjects();
   const { data: tasksData } = useTasks();
 
@@ -34,17 +35,12 @@ export default function DashboardPage() {
   if (error) {
     return (
       <DashboardLayout>
-        <div className="flex min-h-[500px] items-center justify-center">
-          <div className="rounded-2xl border border-[#FF5C6C]/20 bg-[#10121A] px-8 py-7 text-center">
-            <p className="text-sm font-medium text-[#FF7B87]">
-              Failed to load dashboard.
-            </p>
-
-            <p className="mt-2 text-xs text-[#626775]">
-              Please refresh the page and try again.
-            </p>
-          </div>
-        </div>
+        <ErrorState
+          title="Failed to load dashboard."
+          description="Please try again."
+          onRetry={() => refetch()}
+          isRetrying={isRefetching}
+        />
       </DashboardLayout>
     );
   }

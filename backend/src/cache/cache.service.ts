@@ -68,9 +68,14 @@ class CacheService {
       MATCH: pattern,
       COUNT: 100,
     })) {
-      if (typeof key === "string") {
-        keys.push(key);
-      }
+      // The redis v6 client's scanIterator can yield Buffer-typed
+      // keys depending on the client's reply type mapping, not only
+      // strings. The previous `typeof key === "string"` check
+      // silently dropped every Buffer result — meaning this method
+      // matched zero keys and deleted nothing, every single time,
+      // across every caller (task/project create, update, delete,
+      // assign...). String(key) coerces either shape correctly.
+      keys.push(String(key));
     }
 
     if (keys.length === 0) {
@@ -83,7 +88,7 @@ class CacheService {
     await redis.del(keys);
 
     console.log(
-      `🗑️ Cache pattern deleted: ${pattern}`
+      `🗑️ Cache pattern deleted: ${pattern} (${keys.length} key${keys.length === 1 ? "" : "s"})`
     );
   }
 

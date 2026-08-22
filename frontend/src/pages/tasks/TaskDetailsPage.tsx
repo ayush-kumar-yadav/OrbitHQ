@@ -1,18 +1,32 @@
-import { useParams, Link } from "react-router-dom";
+import { useState } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   ArrowLeft,
   FolderKanban,
   CalendarClock,
   User,
   Tag,
+  Pencil,
+  Trash2,
+  X,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import TaskActivity from "../../components/tasks/TaskActivity";
 import DashboardLayout from "../../layouts/DashboardLayout";
+import ErrorState from "../../components/common/ErrorState";
+import { useAuth } from "../../providers/AuthProvider";
 import { useTask } from "../../hooks/tasks/useTask";
 import { useUpdateTaskStatus } from "../../hooks/tasks/useUpdateTaskStatus";
 import { useUpdateTask } from "../../hooks/tasks/useUpdateTask";
+import { useDeleteTask } from "../../hooks/tasks/useDeleteTask";
 import TaskComments from "../../components/tasks/TaskComments";
+
+// Only these roles can edit/delete a task at all — mirrors the
+// backend's authorize() rules on PUT/DELETE /tasks/:id exactly, so
+// the buttons never appear for a role that would just get a 403.
+const CAN_EDIT_ROLES = ["OWNER", "ADMIN", "MANAGER", "DEVELOPER"];
+const CAN_DELETE_ROLES = ["OWNER", "ADMIN"];
 
 const STATUS_OPTIONS = [
   { value: "TODO", label: "To do", color: "#8D919D" },
@@ -30,10 +44,75 @@ const PRIORITY_OPTIONS = [
 
 export default function TaskDetailsPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const { data, isLoading, error } = useTask(id!);
+  const { data, isLoading, error, refetch, isRefetching } = useTask(id!);
   const updateStatus = useUpdateTaskStatus();
   const updateTask = useUpdateTask();
+  const deleteTask = useDeleteTask();
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+
+  const canEdit = CAN_EDIT_ROLES.includes(user?.role ?? "");
+  const canDelete = CAN_DELETE_ROLES.includes(user?.role ?? "");
+
+  function startEditing(task: any) {
+    setEditTitle(task.title);
+    setEditDescription(task.description ?? "");
+    setIsEditing(true);
+  }
+
+  async function handleSaveEdit(taskId: string) {
+    if (!editTitle.trim()) {
+      toast.error("Title can't be empty.");
+      return;
+    }
+
+    try {
+      await updateTask.mutateAsync({
+        taskId,
+        data: {
+          title: editTitle.trim(),
+          description: editDescription.trim(),
+        },
+      });
+
+      toast.success("Task updated");
+      setIsEditing(false);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message ?? "Couldn't update task.");
+    }
+  }
+
+  async function handleStatusChange(taskId: string, status: string) {
+    try {
+      await updateStatus.mutateAsync({ taskId, status });
+    } catch (err: any) {
+      toast.error(err.response?.data?.message ?? "Couldn't update status.");
+    }
+  }
+
+  async function handlePriorityChange(taskId: string, priority: string) {
+    try {
+      await updateTask.mutateAsync({ taskId, data: { priority } });
+    } catch (err: any) {
+      toast.error(err.response?.data?.message ?? "Couldn't update priority.");
+    }
+  }
+  async function handleDelete(taskId: string, projectId?: string) {
+    if (!window.confirm("Delete this task? This can't be undone.")) return;
+
+    try {
+      await deleteTask.mutateAsync(taskId);
+      toast.success("Task deleted");
+      navigate(projectId ? `/projects/${projectId}` : "/tasks");
+    } catch (err: any) {
+      toast.error(err.response?.data?.message ?? "Couldn't delete task.");
+    }
+  }
 
   if (isLoading) {
     return (
@@ -46,16 +125,12 @@ export default function TaskDetailsPage() {
   if (error) {
     return (
       <DashboardLayout>
-        <div className="flex min-h-[500px] items-center justify-center">
-          <div className="rounded-2xl border border-[#FF5C6C]/20 bg-[#10121A] px-8 py-7 text-center">
-            <p className="text-sm font-medium text-[#FF7B87]">
-              Failed to load task.
-            </p>
-            <p className="mt-2 text-xs text-[#626775]">
-              Please refresh the page and try again.
-            </p>
-          </div>
-        </div>
+        <ErrorState
+          title="Failed to load task."
+          description="Please try again."
+          onRetry={() => refetch()}
+          isRetrying={isRefetching}
+        />
       </DashboardLayout>
     );
   }
@@ -82,13 +157,82 @@ export default function TaskDetailsPage() {
           <div className="pointer-events-none absolute -right-24 -top-32 h-72 w-72 rounded-full bg-[#4C6FFF]/10 blur-3xl" />
 
           <div className="relative">
-            <h1 className="font-display text-2xl leading-snug text-white sm:text-3xl">
-              {task.title}
-            </h1>
 
-            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#8D919D]">
-              {task.description || "No description provided."}
-            </p>
+            {(canEdit || canDelete) && (
+              <div className="mb-4 flex items-center justify-end gap-2">
+                {canEdit && !isEditing && (
+                  <button
+                    type="button"
+                    onClick={() => startEditing(task)}
+                    className="flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-[#AEB2BD] transition hover:border-white/[0.14] hover:text-white"
+                  >
+                    <Pencil size={12} />
+                    Edit
+                  </button>
+                )}
+
+                {canDelete && (
+                  <button
+                    type="button"
+                    disabled={deleteTask.isPending}
+                    onClick={() => handleDelete(task._id, task.projectId?._id)}
+                    className="flex items-center gap-1.5 rounded-lg border border-[#FF5C6C]/20 bg-[#FF5C6C]/5 px-3 py-1.5 text-xs font-medium text-[#FF7B87] transition hover:bg-[#FF5C6C]/10 disabled:opacity-50"
+                  >
+                    <Trash2 size={12} />
+                    {deleteTask.isPending ? "Deleting..." : "Delete"}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {isEditing ? (
+              <div className="space-y-3">
+                <input
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="orbit-input font-display text-xl text-white"
+                  autoFocus
+                />
+
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  placeholder="Description (optional)"
+                  rows={3}
+                  className="orbit-input !h-auto resize-none py-3"
+                />
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={updateTask.isPending}
+                    onClick={() => handleSaveEdit(task._id)}
+                    className="orbit-btn-solid h-9 px-4 text-xs"
+                  >
+                    {updateTask.isPending ? "Saving..." : "Save changes"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(false)}
+                    className="flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-medium text-[#8D919D] transition hover:text-white"
+                  >
+                    <X size={13} />
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <h1 className="font-display text-2xl leading-snug text-white sm:text-3xl">
+                  {task.title}
+                </h1>
+
+                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#8D919D]">
+                  {task.description || "No description provided."}
+                </p>
+              </>
+            )}
 
             {/* meta row */}
             <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3 text-xs text-[#8D919D]">
@@ -153,10 +297,7 @@ export default function TaskDetailsPage() {
                     type="button"
                     disabled={updateStatus.isPending}
                     onClick={() =>
-                      updateStatus.mutate({
-                        taskId: task._id,
-                        status: opt.value,
-                      })
+                      handleStatusChange(task._id, opt.value)
                     }
                     className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition disabled:opacity-50 ${
                       active
@@ -190,10 +331,7 @@ export default function TaskDetailsPage() {
                     type="button"
                     disabled={updateTask.isPending}
                     onClick={() =>
-                      updateTask.mutate({
-                        taskId: task._id,
-                        data: { priority: opt.value },
-                      })
+                      handlePriorityChange(task._id, opt.value)
                     }
                     className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition disabled:opacity-50 ${
                       active

@@ -11,6 +11,8 @@ import {
 
 import { useTasks } from "../../hooks/tasks/useTasks";
 import { useMoveTask } from "../../hooks/tasks/useMoveTask";
+import { toast } from "sonner";
+import ErrorState from "../common/ErrorState";
 
 import KanbanColumn from "../kanban/KanbanColumn";
 import KanbanCard from "../kanban/KanbanCard";
@@ -27,7 +29,7 @@ const COLUMNS = [
 ];
 
 export default function ProjectBoard({ projectId }: Props) {
-  const { data, isLoading, error } = useTasks(projectId);
+  const { data, isLoading, error, refetch, isRefetching } = useTasks(projectId);
   const moveTask = useMoveTask();
 
   const [activeTask, setActiveTask] = useState<any>(null);
@@ -53,11 +55,13 @@ export default function ProjectBoard({ projectId }: Props) {
 
   if (error) {
     return (
-      <div className="rounded-2xl border border-[#FF5C6C]/20 bg-[#10121A] px-8 py-7 text-center">
-        <p className="text-sm font-medium text-[#FF7B87]">
-          Failed to load board.
-        </p>
-      </div>
+      <ErrorState
+        title="Failed to load board."
+        description="Please try again."
+        onRetry={() => refetch()}
+        isRetrying={isRefetching}
+        className=""
+      />
     );
   }
 
@@ -71,7 +75,7 @@ export default function ProjectBoard({ projectId }: Props) {
     setActiveTask(event.active.data.current?.task ?? null);
   }
 
-  function handleDragEnd(event: DragEndEvent) {
+  async function handleDragEnd(event: DragEndEvent) {
     setActiveTask(null);
 
     const { active, over } = event;
@@ -83,7 +87,11 @@ export default function ProjectBoard({ projectId }: Props) {
 
     if (!newStatus || newStatus === currentStatus) return;
 
-    moveTask.mutate({ taskId, status: newStatus });
+    try {
+      await moveTask.mutateAsync({ taskId, status: newStatus });
+    } catch (err: any) {
+      toast.error(err.response?.data?.message ?? "Couldn't move task.");
+    }
   }
 
   return (

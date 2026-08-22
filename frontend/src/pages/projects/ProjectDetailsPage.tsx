@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 import DashboardLayout from "../../layouts/DashboardLayout";
+import ErrorState from "../../components/common/ErrorState";
 import { useProject } from "../../hooks/projects/useProject";
 import { useArchiveProject } from "../../hooks/projects/useArchiveProject";
 import { useDeleteProject } from "../../hooks/projects/useDeleteProject";
@@ -24,12 +26,40 @@ const STATUS_META: Record<string, { label: string; color: string }> = {
 
 export default function ProjectDetailsPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
 
-  const { data, isLoading, error } = useProject(id!);
+  const { data, isLoading, error, refetch, isRefetching } = useProject(id!);
   const [activeTab, setActiveTab] = useState("Overview");
 
   const archiveProject = useArchiveProject();
   const deleteProject = useDeleteProject();
+
+  async function handleArchive(projectId: string) {
+    if (!window.confirm("Archive this project? It will be hidden from your active projects list.")) {
+      return;
+    }
+
+    try {
+      await archiveProject.mutateAsync(projectId);
+      toast.success("Project archived");
+    } catch (err: any) {
+      toast.error(err.response?.data?.message ?? "Couldn't archive project.");
+    }
+  }
+
+  async function handleDelete(projectId: string) {
+    if (!window.confirm("This action cannot be undone.\n\nDelete this project permanently?")) {
+      return;
+    }
+
+    try {
+      await deleteProject.mutateAsync(projectId);
+      toast.success("Project deleted");
+      navigate("/projects");
+    } catch (err: any) {
+      toast.error(err.response?.data?.message ?? "Couldn't delete project.");
+    }
+  }
 
   // Real counts for the Overview stat cards. Tasks are scoped to this
   // project; members reflect the organization (OrbitHQ doesn't have
@@ -55,16 +85,16 @@ export default function ProjectDetailsPage() {
   if (error || !data?.data) {
     return (
       <DashboardLayout>
-        <div className="flex min-h-[500px] items-center justify-center">
-          <div className="rounded-2xl border border-[#FF5C6C]/20 bg-[#10121A] px-8 py-7 text-center">
-            <p className="text-sm font-medium text-[#FF7B87]">
-              {error ? "Failed to load project." : "Project not found."}
-            </p>
-            <p className="mt-2 text-xs text-[#626775]">
-              Please refresh the page and try again.
-            </p>
-          </div>
-        </div>
+        <ErrorState
+          title={error ? "Failed to load project." : "Project not found."}
+          description={
+            error
+              ? "Please try again."
+              : "It may have been deleted or you don't have access."
+          }
+          onRetry={error ? () => refetch() : undefined}
+          isRetrying={isRefetching}
+        />
       </DashboardLayout>
     );
   }
@@ -112,20 +142,10 @@ export default function ProjectDetailsPage() {
 
             <ProjectActions
               onEdit={() => setActiveTab("Settings")}
-              onArchive={() => {
-                if (window.confirm("Archive this project?")) {
-                  archiveProject.mutate(project._id);
-                }
-              }}
-              onDelete={() => {
-                if (
-                  window.confirm(
-                    "This action cannot be undone.\n\nDelete this project permanently?"
-                  )
-                ) {
-                  deleteProject.mutate(project._id);
-                }
-              }}
+              onArchive={() => handleArchive(project._id)}
+              onDelete={() => handleDelete(project._id)}
+              isArchiving={archiveProject.isPending}
+              isDeleting={deleteProject.isPending}
             />
           </div>
 

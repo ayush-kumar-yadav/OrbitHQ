@@ -116,7 +116,12 @@ class SearchService {
 
         subtitle: user.role,
 
-        url: `/settings/members`,
+        // Was `/settings/members` — that route never existed (no
+        // /settings page was ever built), and /settings has since
+        // been removed from the app entirely. /organizations now
+        // shows the full member list, so that's the real destination
+        // for a person search result.
+        url: `/organizations`,
 
         metadata: {
           email: user.email,

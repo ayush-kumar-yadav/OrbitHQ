@@ -9,7 +9,7 @@ type Props = {
 };
 
 export default function TaskActivity({ taskId }: Props) {
-  const { data, isLoading, error } = useTaskActivity(taskId);
+  const { data, isLoading, error, refetch, isRefetching } = useTaskActivity(taskId);
 
   const activities = data?.data || [];
 
@@ -34,9 +34,19 @@ export default function TaskActivity({ taskId }: Props) {
       )}
 
       {error && (
-        <p className="mt-5 text-sm text-[#FF7B87]">
-          Failed to load activity.
-        </p>
+        <div className="mt-5 flex items-center gap-3">
+          <p className="text-sm text-[#FF7B87]">
+            Failed to load activity.
+          </p>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            disabled={isRefetching}
+            className="text-xs font-medium text-[#8D919D] underline underline-offset-2 transition hover:text-white disabled:opacity-50"
+          >
+            {isRefetching ? "Retrying..." : "Retry"}
+          </button>
+        </div>
       )}
 
       {!isLoading && !error && activities.length === 0 && (

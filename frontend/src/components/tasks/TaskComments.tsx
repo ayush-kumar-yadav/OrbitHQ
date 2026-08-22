@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Send, MessageSquare } from "lucide-react";
+import { toast } from "sonner";
 
 import { useComments } from "../../hooks/comments/useComments";
 import { useCreateComment } from "../../hooks/comments/useCreateComment";
@@ -10,24 +11,31 @@ type Props = {
 };
 
 export default function TaskComments({ taskId }: Props) {
-  const { data, isLoading, error } = useComments(taskId);
+  const { data, isLoading, error, refetch, isRefetching } = useComments(taskId);
   const createComment = useCreateComment();
 
   const [content, setContent] = useState("");
 
   const comments = data?.data || [];
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     if (!content.trim()) return;
 
-    createComment.mutate({
-      taskId,
-      content,
-    });
+    try {
+      await createComment.mutateAsync({
+        taskId,
+        content: content.trim(),
+      });
 
-    setContent("");
+      setContent("");
+    } catch (err: any) {
+      // Previously this was a fire-and-forget .mutate() — a failed
+      // comment just silently vanished with no feedback and the
+      // input stayed uncleared with no indication anything went wrong.
+      toast.error(err.response?.data?.message ?? "Couldn't post comment.");
+    }
   }
 
   return (
@@ -75,9 +83,19 @@ export default function TaskComments({ taskId }: Props) {
       )}
 
       {error && (
-        <p className="mt-5 text-sm text-[#FF7B87]">
-          Failed to load comments.
-        </p>
+        <div className="mt-5 flex items-center gap-3">
+          <p className="text-sm text-[#FF7B87]">
+            Failed to load comments.
+          </p>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            disabled={isRefetching}
+            className="text-xs font-medium text-[#8D919D] underline underline-offset-2 transition hover:text-white disabled:opacity-50"
+          >
+            {isRefetching ? "Retrying..." : "Retry"}
+          </button>
+        </div>
       )}
 
       {!isLoading && !error && comments.length === 0 && (

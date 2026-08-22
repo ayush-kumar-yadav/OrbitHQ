@@ -1,8 +1,9 @@
 import { useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Search,
   LogOut,
+  Menu,
 } from "lucide-react";
 
 import { useAuth } from "../../providers/AuthProvider";
@@ -11,9 +12,38 @@ import GlobalSearch, {
   type GlobalSearchHandle,
 } from "../search/GlobalSearch";
 
-export default function Navbar() {
+// Route → (eyebrow, title) shown in the navbar. Static routes get an
+// exact match; detail routes (/projects/:id, /tasks/:id) fall back to
+// a section-level label via startsWith, since the navbar doesn't have
+// access to the actual project/task name without deeper prop/context
+// plumbing — "Project / Details" is a smaller, honest fix rather than
+// silently keeping the old page permanently saying "Overview".
+const ROUTE_TITLES: { match: (path: string) => boolean; eyebrow: string; title: string }[] = [
+  { match: (p) => p === "/dashboard", eyebrow: "Workspace", title: "Overview" },
+  { match: (p) => p === "/projects", eyebrow: "Workspace", title: "All Projects" },
+  { match: (p) => p.startsWith("/projects/"), eyebrow: "Project", title: "Details" },
+  { match: (p) => p === "/tasks/kanban", eyebrow: "Tasks", title: "Kanban" },
+  { match: (p) => p === "/tasks", eyebrow: "Workspace", title: "All Tasks" },
+  { match: (p) => p.startsWith("/tasks/"), eyebrow: "Task", title: "Details" },
+  { match: (p) => p === "/organizations", eyebrow: "Workspace", title: "Organization" },
+];
+
+function useRouteTitle() {
+  const { pathname } = useLocation();
+
+  const match = ROUTE_TITLES.find((entry) => entry.match(pathname));
+
+  return match ?? { eyebrow: "Workspace", title: "Overview" };
+}
+
+type Props = {
+  onOpenMenu?: () => void;
+};
+
+export default function Navbar({ onOpenMenu }: Props) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { eyebrow, title } = useRouteTitle();
 
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -37,14 +67,25 @@ export default function Navbar() {
     <header className="sticky top-0 z-30 flex h-[72px] shrink-0 items-center justify-between border-b border-white/[0.07] bg-[#08090D]/90 px-5 backdrop-blur-xl lg:px-7">
 
       {/* Left */}
-      <div>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#555A68]">
-          Workspace
-        </p>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={onOpenMenu}
+          aria-label="Open menu"
+          className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.07] bg-white/[0.03] text-[#8D919D] transition hover:border-white/[0.14] hover:text-white lg:hidden"
+        >
+          <Menu size={16} />
+        </button>
 
-        <h2 className="mt-0.5 text-sm font-semibold text-white">
-          Overview
-        </h2>
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#555A68]">
+            {eyebrow}
+          </p>
+
+          <h2 className="mt-0.5 text-sm font-semibold text-white">
+            {title}
+          </h2>
+        </div>
       </div>
 
       {/* Right */}

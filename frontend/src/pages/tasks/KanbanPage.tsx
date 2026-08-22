@@ -9,8 +9,10 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { LayoutGrid } from "lucide-react";
+import { toast } from "sonner";
 
 import DashboardLayout from "../../layouts/DashboardLayout";
+import ErrorState from "../../components/common/ErrorState";
 import { useTasks } from "../../hooks/tasks/useTasks";
 import { useMoveTask } from "../../hooks/tasks/useMoveTask";
 
@@ -25,7 +27,7 @@ const COLUMNS = [
 ];
 
 export default function KanbanPage() {
-  const { data, isLoading, error } = useTasks();
+  const { data, isLoading, error, refetch, isRefetching } = useTasks();
   const moveTask = useMoveTask();
 
   const [activeTask, setActiveTask] = useState<any>(null);
@@ -47,16 +49,12 @@ export default function KanbanPage() {
   if (error) {
     return (
       <DashboardLayout>
-        <div className="flex min-h-[500px] items-center justify-center">
-          <div className="rounded-2xl border border-[#FF5C6C]/20 bg-[#10121A] px-8 py-7 text-center">
-            <p className="text-sm font-medium text-[#FF7B87]">
-              Failed to load tasks.
-            </p>
-            <p className="mt-2 text-xs text-[#626775]">
-              Please refresh the page and try again.
-            </p>
-          </div>
-        </div>
+        <ErrorState
+          title="Failed to load tasks."
+          description="Please try again."
+          onRetry={() => refetch()}
+          isRetrying={isRefetching}
+        />
       </DashboardLayout>
     );
   }
@@ -71,7 +69,7 @@ export default function KanbanPage() {
     setActiveTask(event.active.data.current?.task ?? null);
   }
 
-  function handleDragEnd(event: DragEndEvent) {
+  async function handleDragEnd(event: DragEndEvent) {
     setActiveTask(null);
 
     const { active, over } = event;
@@ -83,7 +81,14 @@ export default function KanbanPage() {
 
     if (!newStatus || newStatus === currentStatus) return;
 
-    moveTask.mutate({ taskId, status: newStatus });
+    try {
+      await moveTask.mutateAsync({ taskId, status: newStatus });
+    } catch (err: any) {
+      // There's no optimistic update here — the card is grouped by
+      // task.status straight from query data, so a failed move just
+      // silently snaps back with no explanation unless we say so.
+      toast.error(err.response?.data?.message ?? "Couldn't move task.");
+    }
   }
 
   return (
