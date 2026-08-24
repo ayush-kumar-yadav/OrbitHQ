@@ -18,11 +18,9 @@ import { queueService } from "./queue.service";
 
 import { ActivityAction } from "../constants/activity";
 
-
 class CommentService {
   private extractMentions(content: string): string[] {
     const regex = /@(\w+)/g;
-
     const mentions: string[] = [];
 
     let match: RegExpExecArray | null;
@@ -40,12 +38,9 @@ class CommentService {
     authorId: string,
     body: CreateCommentInput
   ) {
-    // 1. Validate request
     const data = createCommentSchema.parse(body);
 
-    // 2. Verify task exists
-    const task =
-      await taskRepository.findTaskById(taskId);
+    const task = await taskRepository.findTaskById(taskId);
 
     if (!task) {
       throw new ApiError(
@@ -54,28 +49,32 @@ class CommentService {
       );
     }
 
-    // 3. Extract @mentions
+    // IMPORTANT: tenant isolation
+    if (
+      task.organizationId.toString() !==
+      organizationId
+    ) {
+      throw new ApiError(
+        HTTPSTATUS.FORBIDDEN,
+        "You do not have access to this task."
+      );
+    }
+
     const mentions =
       this.extractMentions(data.content);
 
-    // 4. Create comment
     const comment =
       await commentRepository.createComment({
         organizationId:
           new Types.ObjectId(organizationId),
-
         taskId:
           new Types.ObjectId(taskId),
-
         author:
           new Types.ObjectId(authorId),
-
         content: data.content,
-
         mentions,
       });
 
-    // 5. Create activity log
     await activityService.log({
       organizationId,
       actor: authorId,
@@ -89,20 +88,17 @@ class CommentService {
       },
     });
 
-    // 6. Queue notification for task assignee
-    // Queue notification for task assignee
-if (task.assignee) {
-  await queueService.addNotificationJob({
-    userId: task.assignee._id.toString(),
-    organizationId,
-    type: "COMMENT_ADDED",
-    message: `A new comment was added to task ${taskId}`,
-    taskId,
-    actorId: authorId,
-  });
-}
+    if (task.assignee) {
+      await queueService.addNotificationJob({
+        userId: task.assignee._id.toString(),
+        organizationId,
+        type: "COMMENT_ADDED",
+        message: `A new comment was added to task ${taskId}`,
+        taskId,
+        actorId: authorId,
+      });
+    }
 
-    // 7. Return created comment
     return comment;
   }
 
@@ -113,10 +109,8 @@ if (task.assignee) {
     return commentRepository.findComments({
       organizationId:
         new Types.ObjectId(organizationId),
-
       taskId:
         new Types.ObjectId(taskId),
-
       deletedAt: null,
     });
   }
@@ -126,11 +120,9 @@ if (task.assignee) {
     authorId: string,
     body: UpdateCommentInput
   ) {
-    // 1. Validate
     const data =
       updateCommentSchema.parse(body);
 
-    // 2. Find comment
     const comment =
       await commentRepository.findById(commentId);
 
@@ -141,7 +133,6 @@ if (task.assignee) {
       );
     }
 
-    // 3. Only author can edit
     if (
       String(comment.author._id) !== authorId
     ) {
@@ -151,11 +142,9 @@ if (task.assignee) {
       );
     }
 
-    // 4. Extract updated mentions
     const mentions =
       this.extractMentions(data.content);
 
-    // 5. Update comment
     const updated =
       await commentRepository.updateComment(
         commentId,
@@ -165,25 +154,17 @@ if (task.assignee) {
         }
       );
 
-    // 6. Activity log
     await activityService.log({
       organizationId:
         String(comment.organizationId),
-
       actor: authorId,
-
       taskId:
         String(comment.taskId),
-
       entity: "COMMENT",
-
       action:
         ActivityAction.COMMENT_UPDATED,
-
       oldValue: comment.content,
-
       newValue: data.content,
-
       metadata: {
         commentId,
         mentions,
@@ -197,7 +178,6 @@ if (task.assignee) {
     commentId: string,
     authorId: string
   ) {
-    // 1. Find comment
     const comment =
       await commentRepository.findById(
         commentId
@@ -210,7 +190,6 @@ if (task.assignee) {
       );
     }
 
-    // 2. Only author can delete
     if (
       String(comment.author._id) !== authorId
     ) {
@@ -220,29 +199,21 @@ if (task.assignee) {
       );
     }
 
-    // 3. Soft delete
     const deleted =
       await commentRepository.softDeleteComment(
         commentId
       );
 
-    // 4. Activity log
     await activityService.log({
       organizationId:
         String(comment.organizationId),
-
       actor: authorId,
-
       taskId:
         String(comment.taskId),
-
       entity: "COMMENT",
-
       action:
         ActivityAction.COMMENT_DELETED,
-
       oldValue: comment.content,
-
       metadata: {
         commentId,
       },

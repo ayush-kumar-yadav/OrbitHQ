@@ -113,6 +113,9 @@ class TaskService {
       );
     }
 
+    /*
+     * Validate assignee.
+     */
     if (data.assignee) {
       const assignee =
         await userRepository.findById(
@@ -137,6 +140,9 @@ class TaskService {
       }
     }
 
+    /*
+     * Create task.
+     */
     const task = await taskRepository.createTask({
       title: data.title,
       description: data.description,
@@ -162,18 +168,25 @@ class TaskService {
       tags: data.tags ?? [],
     });
 
-    // Invalidate task list caches
+    /*
+     * Invalidate task list caches.
+     */
     await cacheService.delPattern(
       `tasks:${user.organizationId}:*`
     );
 
-    // Invalidate dashboard cache
+    /*
+     * Invalidate dashboard cache.
+     */
     await cacheService.del(
       cacheKeys.dashboard(
         user.organizationId!
       )
     );
 
+    /*
+     * Activity log.
+     */
     await activityService.log({
       organizationId: user.organizationId!,
       actor: user.id,
@@ -186,6 +199,27 @@ class TaskService {
         priority: task.priority,
       },
     });
+
+    /*
+     * Notify the assignee when a task is
+     * created for them.
+     *
+     * Do not notify when the creator assigns
+     * the task to themselves.
+     */
+    if (
+      data.assignee &&
+      data.assignee !== user.id
+    ) {
+      await queueService.addNotificationJob({
+        userId: data.assignee,
+        organizationId: user.organizationId!,
+        type: "TASK_ASSIGNED",
+        message: `You were assigned to task "${task.title}"`,
+        taskId: String(task._id),
+        actorId: user.id,
+      });
+    }
 
     return task;
   }
@@ -210,10 +244,15 @@ class TaskService {
   ) {
     this.ensureOrganization(user);
 
-    const organizationId = user.organizationId!;
+    const organizationId =
+      user.organizationId!;
 
     const page = Number(query.page) || 1;
-    const limit = Number(query.limit) || 10;
+
+    const limit = Math.min(
+      Math.max(Number(query.limit) || 10, 1),
+      100
+    );
 
     /**
      * Generate cache key based on:
@@ -232,9 +271,11 @@ class TaskService {
     );
 
     /**
-     * Check Redis first
+     * Check Redis first.
      */
-    const cachedResult = await cacheService.get(cacheKey);
+    const cachedResult = await cacheService.get(
+      cacheKey
+    );
 
     if (cachedResult) {
       return cachedResult;
@@ -285,14 +326,21 @@ class TaskService {
         ? query.sort.substring(1)
         : query.sort;
 
-      const order: 1 | -1 =
-        query.sort.startsWith("-")
-          ? -1
-          : 1;
+      const allowedSortFields = [
+        "createdAt",
+        "updatedAt",
+        "priority",
+        "status",
+        "dueDate",
+      ];
 
-      sort = {
-        [field]: order,
-      };
+      if (allowedSortFields.includes(field)) {
+        sort = {
+          [field]: query.sort.startsWith("-")
+            ? -1
+            : 1,
+        };
+      }
     }
 
     const [tasks, total] = await Promise.all([
@@ -317,8 +365,8 @@ class TaskService {
     };
 
     /**
-     * Store complete result in Redis
-     * TTL = 120 seconds
+     * Store complete result in Redis.
+     * TTL = 120 seconds.
      */
     await cacheService.set(
       cacheKey,
@@ -608,9 +656,8 @@ class TaskService {
       },
     });
 
-    // Notify the newly assigned user — mirrors the existing
-    // comment-notification pattern. Skipped on self-assignment,
-    // since notifying yourself about your own action is just noise.
+    // Notify the newly assigned user.
+    // Skip self-assignment.
     if (data.assignee !== user.id) {
       await queueService.addNotificationJob({
         userId: data.assignee,
@@ -712,7 +759,8 @@ class TaskService {
       actor: user.id,
       taskId,
       entity: "TASK",
-      action: ActivityAction.TASK_STATUS_CHANGED,
+      action:
+        ActivityAction.TASK_STATUS_CHANGED,
       oldValue: previousStatus,
       newValue: data.status,
     });

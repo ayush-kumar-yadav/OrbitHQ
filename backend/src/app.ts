@@ -22,6 +22,12 @@ import { env } from "./config/env";
 
 const app = express();
 
+// Deployed behind a reverse proxy (Render, Railway, etc). Without
+// this, req.ip resolves to the proxy's IP for every request, which
+// collapses the rate limiter into a single shared bucket for all
+// users instead of one per real client.
+app.set("trust proxy", 1);
+
 // Global Middleware
 app.use(requestId);
 app.use(performanceMiddleware);
