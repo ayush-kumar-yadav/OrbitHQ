@@ -51,7 +51,11 @@ export default function LoginPage() {
         response.data.refreshToken
       );
 
-      navigate("/dashboard");
+      navigate(
+        response.data.user.organizationId
+          ? "/dashboard"
+          : "/organizations"
+      );
     } catch (error: any) {
       console.error(error);
 

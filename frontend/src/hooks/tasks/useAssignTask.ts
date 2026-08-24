@@ -1,25 +1,29 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
+
 import { taskService } from "../../services/task.service";
 
-export function useMoveTask() {
+export function useAssignTask() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({
       taskId,
-      status,
+      assignee,
     }: {
       taskId: string;
-      status: string;
-    }) => taskService.updateTaskStatus(taskId, status),
+      assignee: string;
+    }) => taskService.assignTask(taskId, assignee),
 
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ["tasks"],
+        queryKey: ["task", variables.taskId],
       });
 
       queryClient.invalidateQueries({
-        queryKey: ["projects"],
+        queryKey: ["tasks"],
       });
 
       queryClient.invalidateQueries({

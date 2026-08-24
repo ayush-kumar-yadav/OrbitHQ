@@ -9,6 +9,7 @@ import {
   Pencil,
   Trash2,
   X,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -20,6 +21,8 @@ import { useTask } from "../../hooks/tasks/useTask";
 import { useUpdateTaskStatus } from "../../hooks/tasks/useUpdateTaskStatus";
 import { useUpdateTask } from "../../hooks/tasks/useUpdateTask";
 import { useDeleteTask } from "../../hooks/tasks/useDeleteTask";
+import { useAssignTask } from "../../hooks/tasks/useAssignTask";
+import { useMembers } from "../../hooks/organizations/useMembers";
 import TaskComments from "../../components/tasks/TaskComments";
 
 // Only these roles can edit/delete a task at all — mirrors the
@@ -27,6 +30,8 @@ import TaskComments from "../../components/tasks/TaskComments";
 // the buttons never appear for a role that would just get a 403.
 const CAN_EDIT_ROLES = ["OWNER", "ADMIN", "MANAGER", "DEVELOPER"];
 const CAN_DELETE_ROLES = ["OWNER", "ADMIN"];
+// Mirrors the backend's authorize() rules on PATCH /tasks/:id/assign.
+const CAN_ASSIGN_ROLES = ["OWNER", "ADMIN", "MANAGER"];
 
 const STATUS_OPTIONS = [
   { value: "TODO", label: "To do", color: "#8D919D" },
@@ -51,13 +56,18 @@ export default function TaskDetailsPage() {
   const updateStatus = useUpdateTaskStatus();
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
+  const assignTask = useAssignTask();
+  const { data: membersData } = useMembers();
 
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [assigneeMenuOpen, setAssigneeMenuOpen] = useState(false);
 
   const canEdit = CAN_EDIT_ROLES.includes(user?.role ?? "");
   const canDelete = CAN_DELETE_ROLES.includes(user?.role ?? "");
+  const canAssign = CAN_ASSIGN_ROLES.includes(user?.role ?? "");
+  const members = membersData?.data ?? [];
 
   function startEditing(task: any) {
     setEditTitle(task.title);
@@ -84,6 +94,17 @@ export default function TaskDetailsPage() {
       setIsEditing(false);
     } catch (err: any) {
       toast.error(err.response?.data?.message ?? "Couldn't update task.");
+    }
+  }
+
+  async function handleAssign(taskId: string, assignee: string) {
+    setAssigneeMenuOpen(false);
+
+    try {
+      await assignTask.mutateAsync({ taskId, assignee });
+      toast.success("Task assigned");
+    } catch (err: any) {
+      toast.error(err.response?.data?.message ?? "Couldn't assign task.");
     }
   }
 
@@ -243,10 +264,58 @@ export default function TaskDetailsPage() {
                 </span>
               )}
 
-              <span className="flex items-center gap-1.5">
-                <User size={13} className="text-[#4F5460]" />
-                {task.assignee?.name ?? "Unassigned"}
-              </span>
+              {canAssign ? (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setAssigneeMenuOpen((v) => !v)}
+                    className="flex items-center gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.03] px-2.5 py-1 transition hover:border-white/[0.14] hover:text-white"
+                  >
+                    <User size={13} className="text-[#4F5460]" />
+                    {task.assignee?.name ?? "Unassigned"}
+                    <ChevronDown size={12} className="text-[#4F5460]" />
+                  </button>
+
+                  {assigneeMenuOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setAssigneeMenuOpen(false)}
+                      />
+
+                      <div className="absolute left-0 z-50 mt-1.5 w-52 overflow-hidden rounded-xl border border-white/[0.08] bg-[#10121A] py-1.5 shadow-xl">
+                        {members.length === 0 && (
+                          <p className="px-3.5 py-2 text-xs text-[#626775]">
+                            No members yet
+                          </p>
+                        )}
+
+                        {members.map((member: any) => (
+                          <button
+                            key={member.user._id}
+                            type="button"
+                            onClick={() =>
+                              handleAssign(task._id, member.user._id)
+                            }
+                            disabled={assignTask.isPending}
+                            className="flex w-full items-center justify-between px-3.5 py-2 text-left text-xs text-[#EDEEF2] transition hover:bg-white/[0.05] disabled:opacity-50"
+                          >
+                            {member.user.name}
+                            {task.assignee?._id === member.user._id && (
+                              <span className="h-1.5 w-1.5 rounded-full bg-[#4C6FFF]" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <span className="flex items-center gap-1.5">
+                  <User size={13} className="text-[#4F5460]" />
+                  {task.assignee?.name ?? "Unassigned"}
+                </span>
+              )}
 
               {task.dueDate && (
                 <span className="flex items-center gap-1.5">

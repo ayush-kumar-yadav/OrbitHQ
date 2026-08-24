@@ -19,6 +19,11 @@ import { UserRole } from "../constants/roles";
 import { cacheService } from "../cache/cache.service";
 import { cacheKeys } from "../cache/cache.keys";
 
+import {
+  generateAccessToken,
+  generateRefreshToken,
+} from "../utils/jwt";
+
 class OrganizationService {
   async createOrganization(
     userId: string,
@@ -61,19 +66,54 @@ class OrganizationService {
         ],
       });
 
-    await userRepository.updateUser(
+    const updatedUser =
+      await userRepository.updateUser(
+        userId,
+        {
+          organizationId:
+            organization._id,
+          role: UserRole.OWNER,
+        }
+      );
+
+    if (!updatedUser) {
+      throw new ApiError(
+        HTTPSTATUS.NOT_FOUND,
+        "User not found"
+      );
+    }
+
+    // The access/refresh tokens issued at login carry organizationId
+    // and role baked directly into the payload — they aren't looked
+    // up fresh per request. Without reissuing them here, the user's
+    // existing token would keep claiming organizationId: null even
+    // though the database now has the real one, and every org-scoped
+    // request (dashboard, tasks, notifications...) would keep 400ing
+    // until the old token happened to expire (15 minutes).
+    const accessToken =
+      generateAccessToken(updatedUser);
+
+    const refreshToken =
+      generateRefreshToken(updatedUser);
+
+    await userRepository.updateRefreshToken(
       userId,
-      {
-        organizationId:
-          organization._id,
-        role: UserRole.OWNER,
-      }
+      refreshToken
     );
 
     return {
       id: organization._id.toString(),
       name: organization.name,
       slug: organization.slug,
+      accessToken,
+      refreshToken,
+      user: {
+        id: updatedUser._id.toString(),
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        organizationId: organization._id.toString(),
+      },
     };
   }
 

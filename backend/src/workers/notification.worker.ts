@@ -1,7 +1,4 @@
 import dotenv from "dotenv";
-
-dotenv.config();
-
 import { Job, Worker } from "bullmq";
 import { Types } from "mongoose";
 
@@ -22,22 +19,16 @@ interface NotificationJobData {
   actorId?: string;
 }
 
-const startWorker = async () => {
+// Builds and starts the BullMQ worker. Assumes MongoDB and Redis are
+// already connected by the caller — this used to connect to both
+// itself and call process.exit(1) on failure, which only made sense
+// when this ran as its own standalone process. Now it can also be
+// started inside server.ts (see the merged setup below), where
+// killing the process on a worker-startup failure would take the
+// whole web server down with it — so failures here are logged and
+// swallowed instead, leaving the HTTP server running either way.
+export async function startNotificationWorker(): Promise<Worker<NotificationJobData> | null> {
   try {
-    // MongoDB
-    await connectDB();
-
-    console.log(
-      "🟢 Worker MongoDB connected"
-    );
-
-    // Redis Pub/Sub client
-    await redisService.connect();
-
-    console.log(
-      "🟢 Worker Redis connected"
-    );
-
     const notificationWorker =
       new Worker<NotificationJobData>(
         "notifications",
@@ -147,14 +138,48 @@ const startWorker = async () => {
     console.log(
       "👷 Notification worker started"
     );
+
+    return notificationWorker;
   } catch (error) {
     console.error(
       "❌ Failed to start notification worker:",
       error
     );
 
-    process.exit(1);
+    return null;
   }
-};
+}
 
-startWorker();
+// Standalone entry point — still works exactly as before if you run
+// this file directly (`npm run dev:worker` / `node dist/workers/
+// notification.worker.js`), e.g. for local development or if you
+// later move to a paid host that runs it as its own service. In that
+// case it owns its own env/DB/Redis connections and does exit on a
+// genuine startup failure, since there's no web server in this
+// process to protect.
+if (require.main === module) {
+  (async () => {
+    dotenv.config();
+
+    try {
+      await connectDB();
+      console.log("🟢 Worker MongoDB connected");
+
+      await redisService.connect();
+      console.log("🟢 Worker Redis connected");
+
+      const worker = await startNotificationWorker();
+
+      if (!worker) {
+        throw new Error("Worker failed to start");
+      }
+    } catch (error) {
+      console.error(
+        "❌ Failed to start standalone notification worker:",
+        error
+      );
+
+      process.exit(1);
+    }
+  })();
+}

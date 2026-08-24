@@ -7,9 +7,20 @@ export function useCreateTask() {
   return useMutation({
     mutationFn: taskService.createTask,
 
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
+      // Invalidating ["tasks", projectId] only matches that exact
+      // query — React Query's default invalidation matches by
+      // "starts with", so it never touched ["tasks", undefined]
+      // (the general /tasks page and /tasks/kanban, which call
+      // useTasks() with no project) or ["dashboard"]. Both stayed
+      // silently stale after creating a task from inside a project,
+      // even though that project's own task list updated correctly.
       queryClient.invalidateQueries({
-        queryKey: ["tasks", variables.projectId],
+        queryKey: ["tasks"],
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: ["dashboard"],
       });
     },
   });

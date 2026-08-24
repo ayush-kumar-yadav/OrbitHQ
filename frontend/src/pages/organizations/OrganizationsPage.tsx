@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Building2, UserPlus } from "lucide-react";
+import { toast } from "sonner";
 
 import DashboardLayout from "../../layouts/DashboardLayout";
 import { useAuth } from "../../providers/AuthProvider";
@@ -88,6 +90,9 @@ function OrganizationOverview() {
 /* ========================================================= */
 
 function CreateOrganizationForm() {
+  const navigate = useNavigate();
+  const { login } = useAuth();
+
   const [name, setName] = useState("");
 
   const createOrganization = useCreateOrganization();
@@ -97,12 +102,27 @@ function CreateOrganizationForm() {
 
     if (!name.trim()) return;
 
-    await createOrganization.mutateAsync({ name });
+    try {
+      const response = await createOrganization.mutateAsync({ name });
 
-    setName("");
-    // Reload so AuthProvider/user.organizationId reflects the newly
-    // created org — the backend already updated the user record.
-    window.location.reload();
+      // The backend reissues fresh tokens here because organizationId
+      // and role are baked into the JWT payload at generation time —
+      // the token the user logged in with still claims
+      // organizationId: null otherwise, and every org-scoped request
+      // right after this would keep 400ing despite the org existing.
+      login(
+        response.data.user,
+        response.data.accessToken,
+        response.data.refreshToken
+      );
+
+      toast.success("Organization created");
+      navigate("/dashboard");
+    } catch (err: any) {
+      toast.error(
+        err.response?.data?.message ?? "Couldn't create organization."
+      );
+    }
   }
 
   return (

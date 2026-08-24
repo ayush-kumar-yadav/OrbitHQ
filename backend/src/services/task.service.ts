@@ -5,6 +5,7 @@ import { ApiError } from "../errors/ApiError";
 
 import { activityService } from "./activity.service";
 import { ActivityAction } from "../constants/activity";
+import { queueService } from "./queue.service";
 
 import { cacheService } from "../cache/cache.service";
 import { cacheKeys } from "../cache/cache.keys";
@@ -606,6 +607,20 @@ class TaskService {
         assignee: data.assignee,
       },
     });
+
+    // Notify the newly assigned user — mirrors the existing
+    // comment-notification pattern. Skipped on self-assignment,
+    // since notifying yourself about your own action is just noise.
+    if (data.assignee !== user.id) {
+      await queueService.addNotificationJob({
+        userId: data.assignee,
+        organizationId: user.organizationId!,
+        type: "TASK_ASSIGNED",
+        message: `You were assigned to task "${task.title}"`,
+        taskId,
+        actorId: user.id,
+      });
+    }
 
     return assignedTask;
   }

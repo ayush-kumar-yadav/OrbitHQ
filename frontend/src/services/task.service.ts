@@ -58,6 +58,15 @@ async updateTask(
   return response.data;
 },
 
+async assignTask(taskId: string, assignee: string) {
+  const response = await api.patch(
+    `/tasks/${taskId}/assign`,
+    { assignee }
+  );
+
+  return response.data;
+},
+
 async deleteTask(taskId: string) {
   const response = await api.delete(`/tasks/${taskId}`);
 
